@@ -19,23 +19,23 @@ make
 This will generate the myplugin.so file required by Hyprland.
 
 ## Usage
-## Loading the plugin
+### Loading the plugin
 
 Use hyprctl to load the compiled plugin into your current session:
 
 ```
-hyprctl plugin load /home/jairnarv/MyPlugin/myplugin.so
+hyprctl plugin load /path/to/plugin/myplugin.so
 ```
 
-## Unloading the plugin
+### Unloading the plugin
 
 To remove the plugin from the current session:
 
 ```
-hyprctl plugin unload /home/jairnarv/MyPlugin/myplugin.so
+hyprctl plugin unload /path/to/plugin/myplugin.so
 ```
 
-## Configuration
+### Configuration
 
 Add the plugin to your hyprland.conf to ensure it loads on startup:
 
