@@ -157,7 +157,6 @@ void CHyprgrid::update(const ITrackpadGesture::STrackpadGestureUpdate& e)
         }
 
         PWORKSPACE->updateWindowDecos();
-        debugLog("Gesto a la izquierda/arriba activado");
     }
     // Manejar gesto hacia abajo/derecha (delta positivo)
     else {
@@ -193,13 +192,10 @@ void CHyprgrid::update(const ITrackpadGesture::STrackpadGestureUpdate& e)
         }
 
         PWORKSPACE->updateWindowDecos();
-        debugLog("Gesto a la derecha/abajo activado");
     }
 
     g_pHyprRenderer->damageMonitor(m_monitor.lock());
     m_workspaceBegin->updateWindowDecos();
-
-    debugLog("m_delta: " + std::to_string(m_delta));
 }
 
 void CHyprgrid::end(const ITrackpadGesture::STrackpadGestureEnd& e)
@@ -234,11 +230,6 @@ void CHyprgrid::end(const ITrackpadGesture::STrackpadGestureEnd& e)
     bool hitRightBorder = (m_workspaceBegin->m_id % hyprgrid_grid_size_x == 0 && m_delta > 0 && !m_vertanim);
     bool hitTopBorder = (m_workspaceBegin->m_id <= hyprgrid_grid_size_x && m_delta == 0 && m_vertanim);
     bool hitBottomBorder = (m_workspaceBegin->m_id > (hyprgrid_grid_size_x * (hyprgrid_grid_size_y - 1)) && m_delta > 0 && m_vertanim);
-
-    debugLog(">>===========Gesto finalizado==========<<");
-    debugLog("ID Workspace: " + std::to_string(m_workspaceBegin->m_id));
-    debugLog("m_delta: " + std::to_string(m_delta));
-    debugLog("m_vertanim: " + std::to_string(m_vertanim));
 
     if (hitTopBorder) {
         HyprlandAPI::addNotification(PHANDLE, "Se ha alcanzado el borde superior, cambiando workspace cancelado", { 1.0, 0.2, 0.2, 1.0 }, 5000);

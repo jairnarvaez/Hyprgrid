@@ -47,12 +47,6 @@ static Hyprlang::CParseResult hyprgridGestureKeyword(const char* LHS, const char
         return result;
 
     CConstVarList data(RHS);
-
-    debugLog("Función llamada desde hyprgridGestureKeyword");
-
-    debugLog("Tipo de data[1]: " + getTypeName(typeid(data[0])));
-    debugLog("Contenido de data[1] " + std::string(data[0]));
-
     size_t fingerCount = 0;
     eTrackpadGestureDirection direction = TRACKPAD_GESTURE_DIR_NONE;
 
@@ -155,23 +149,6 @@ static Hyprlang::CParseResult gridSizeYKeyword(const char* LHS, const char* RHS)
 APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle)
 {
     PHANDLE = handle;
-
-    debugLog("=======================================================");
-
-    // static auto mouseButton = HyprlandAPI::registerCallbackDynamic(PHANDLE, "mouseButton", [](void* self, SCallbackInfo& info, std::any data) {
-    //     auto e = std::any_cast<IPointer::SButtonEvent>(data);
-    //     if (e.button == BTN_LEFT) {
-    //         if (e.state) { // clicked
-    //             HyprlandAPI::addNotification(
-    //                 PHANDLE,
-    //                 "hola",
-    //                 { 1.0, 0.2, 0.2, 1.0 },
-    //                 5000);
-    //         }
-    //     }
-    // });
-
-    debugLog("Función llamada desde el main");
 
     HyprlandAPI::addConfigKeyword(PHANDLE, "hyprgrid-gesture-horizontal", ::hyprgridGestureKeyword, {});
 
