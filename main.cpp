@@ -1,4 +1,4 @@
-#include "ExpoGesture.hpp"
+#include "Hyprgrid.hpp"
 #include "globals.hpp"
 #include <any>
 #include <hyprland/src/Compositor.hpp>
@@ -39,7 +39,7 @@ APICALL EXPORT std::string PLUGIN_API_VERSION()
     return HYPRLAND_API_VERSION;
 }
 
-static Hyprlang::CParseResult expoGestureKeyword(const char* LHS, const char* RHS)
+static Hyprlang::CParseResult hyprgridGestureKeyword(const char* LHS, const char* RHS)
 {
     Hyprlang::CParseResult result;
 
@@ -48,7 +48,7 @@ static Hyprlang::CParseResult expoGestureKeyword(const char* LHS, const char* RH
 
     CConstVarList data(RHS);
 
-    debugLog("Función llamada desde expoGestureKeyword");
+    debugLog("Función llamada desde hyprgridGestureKeyword");
 
     debugLog("Tipo de data[1]: " + getTypeName(typeid(data[0])));
     debugLog("Contenido de data[1] " + std::string(data[0]));
@@ -102,7 +102,7 @@ static Hyprlang::CParseResult expoGestureKeyword(const char* LHS, const char* RH
     std::expected<void, std::string> resultFromGesture;
 
     if (data[startDataIdx] == "expo")
-        resultFromGesture = g_pTrackpadGestures->addGesture(makeUnique<CExpoGesture>(), fingerCount, direction, modMask, deltaScale);
+        resultFromGesture = g_pTrackpadGestures->addGesture(makeUnique<CHyprgrid>(), fingerCount, direction, modMask, deltaScale);
     else if (data[startDataIdx] == "unset")
         resultFromGesture = g_pTrackpadGestures->removeGesture(fingerCount, direction, modMask, deltaScale);
     else {
@@ -120,13 +120,13 @@ static Hyprlang::CParseResult expoGestureKeyword(const char* LHS, const char* RH
 
 void setGridSizeX(int x) {
     if (x > 0) {
-        hyprexpo_grid_size_x = x;
+        hyprgrid_grid_size_x = x;
     }
 }
 
 void setGridSizeY(int y) {
     if (y > 0) {
-        hyprexpo_grid_size_y = y;
+        hyprgrid_grid_size_y = y;
     }
 }
 
@@ -173,17 +173,17 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle)
 
     debugLog("Función llamada desde el main");
 
-    HyprlandAPI::addConfigKeyword(PHANDLE, "hyprexpo-gesture-horizontal", ::expoGestureKeyword, {});
+    HyprlandAPI::addConfigKeyword(PHANDLE, "hyprgrid-gesture-horizontal", ::hyprgridGestureKeyword, {});
 
-    HyprlandAPI::addConfigKeyword(PHANDLE, "hyprexpo-gesture-vertical", ::expoGestureKeyword, {});
+    HyprlandAPI::addConfigKeyword(PHANDLE, "hyprgrid-gesture-vertical", ::hyprgridGestureKeyword, {});
 
-    HyprlandAPI::addConfigKeyword(PHANDLE, "hyprexpo-grid-size-x", ::gridSizeXKeyword, {});
+    HyprlandAPI::addConfigKeyword(PHANDLE, "hyprgrid-grid-size-x", ::gridSizeXKeyword, {});
 
-    HyprlandAPI::addConfigKeyword(PHANDLE, "hyprexpo-grid-size-y", ::gridSizeYKeyword, {});
+    HyprlandAPI::addConfigKeyword(PHANDLE, "hyprgrid-grid-size-y", ::gridSizeYKeyword, {});
 
     return {
-        "left-swipe-gesture",
-        "Un plugin que detecta swipes hacia la izquierda con 3 dedos.",
+        "hyprgrid",
+        "A plugin to create a grid of workspaces and navigate them with gestures.",
         "jair",
         "1.0"
     };
