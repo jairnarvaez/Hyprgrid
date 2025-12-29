@@ -4,13 +4,13 @@
 #include <hyprland/src/desktop/DesktopTypes.hpp>
 #include <hyprland/src/managers/input/trackpad/gestures/ITrackpadGesture.hpp>
 
-class CExpoGesture : public ITrackpadGesture {
+class CHyprgrid : public ITrackpadGesture {
 public:
-    CExpoGesture() {
-        m_gridSizeX = hyprexpo_grid_size_x;
-        m_gridSizeY = hyprexpo_grid_size_y;
+    CHyprgrid() {
+        m_gridSizeX = hyprgrid_grid_size_x;
+        m_gridSizeY = hyprgrid_grid_size_y;
     }
-    virtual ~CExpoGesture() = default;
+    virtual ~CHyprgrid() = default;
 
     virtual void begin(const ITrackpadGesture::STrackpadGestureBegin& e);
     virtual void update(const ITrackpadGesture::STrackpadGestureUpdate& e);

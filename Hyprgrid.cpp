@@ -1,4 +1,4 @@
-#include "ExpoGesture.hpp"
+#include "Hyprgrid.hpp"
 #include "globals.hpp"
 #include <string>
 
@@ -16,7 +16,7 @@ bool isSideWorkspace(int workspaceID, int gridSizeX) {
     return workspaceID % gridSizeX == 1 || workspaceID % gridSizeX == 0;
 }
 
-void CExpoGesture::begin(const ITrackpadGesture::STrackpadGestureBegin& e)
+void CHyprgrid::begin(const ITrackpadGesture::STrackpadGestureBegin& e)
 {
     ITrackpadGesture::begin(e);
 
@@ -32,7 +32,7 @@ void CExpoGesture::begin(const ITrackpadGesture::STrackpadGestureBegin& e)
     m_monitor = g_pCompositor->m_lastMonitor;
 }
 
-void CExpoGesture::update(const ITrackpadGesture::STrackpadGestureUpdate& e)
+void CHyprgrid::update(const ITrackpadGesture::STrackpadGestureUpdate& e)
 {
     if (m_firstUpdate) {
         m_firstUpdate = false;
@@ -202,7 +202,7 @@ void CExpoGesture::update(const ITrackpadGesture::STrackpadGestureUpdate& e)
     debugLog("m_delta: " + std::to_string(m_delta));
 }
 
-void CExpoGesture::end(const ITrackpadGesture::STrackpadGestureEnd& e)
+void CHyprgrid::end(const ITrackpadGesture::STrackpadGestureEnd& e)
 {
     static auto PSWIPEPERC = CConfigValue<Hyprlang::FLOAT>("gestures:workspace_swipe_cancel_ratio");
     static auto PSWIPEUSER = CConfigValue<Hyprlang::INT>("gestures:workspace_swipe_use_r");
