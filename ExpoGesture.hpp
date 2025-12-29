@@ -6,12 +6,18 @@
 
 class CExpoGesture : public ITrackpadGesture {
 public:
-    CExpoGesture() = default;
+    CExpoGesture() {
+        m_gridSizeX = hyprexpo_grid_size_x;
+        m_gridSizeY = hyprexpo_grid_size_y;
+    }
     virtual ~CExpoGesture() = default;
 
     virtual void begin(const ITrackpadGesture::STrackpadGestureBegin& e);
     virtual void update(const ITrackpadGesture::STrackpadGestureUpdate& e);
     virtual void end(const ITrackpadGesture::STrackpadGestureEnd& e);
+
+    int m_gridSizeX;
+    int m_gridSizeY;
 
 private:
     PHLWORKSPACE m_workspaceBegin = nullptr;

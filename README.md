@@ -43,4 +43,6 @@ Add the plugin to your hyprland.conf to ensure it loads on startup:
 exec-once = hyprctl plugin load /path/to/plugin/myplugin.so
 hyprexpo-gesture-horizontal = 3, horizontal, expo
 hyprexpo-gesture-vertical = 3, vertical, expo
+hyprexpo-grid-size-x = 4
+hyprexpo-grid-size-y = 4
 ```
