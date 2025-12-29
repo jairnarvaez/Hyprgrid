@@ -49,8 +49,8 @@ void CHyprgrid::update(const ITrackpadGesture::STrackpadGestureUpdate& e)
     // Calcular workspace IDs para el grid
     int workspaceIDLeft = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r-1" : "m-1")).id;
     int workspaceIDRight = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r+1" : "m+1")).id;
-    int workspaceIDUp = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r-" + std::to_string(m_gridSizeX) : "m-" + std::to_string(m_gridSizeX))).id;
-    int workspaceIDDown = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r+" + std::to_string(m_gridSizeX) : "m+" + std::to_string(m_gridSizeX))).id;
+    int workspaceIDUp = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r-" + std::to_string(hyprgrid_grid_size_x) : "m-" + std::to_string(hyprgrid_grid_size_x))).id;
+    int workspaceIDDown = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r+" + std::to_string(hyprgrid_grid_size_x) : "m+" + std::to_string(hyprgrid_grid_size_x))).id;
 
     // Validar workspaces
     if (workspaceIDLeft == WORKSPACE_INVALID || workspaceIDRight == WORKSPACE_INVALID || workspaceIDUp == WORKSPACE_INVALID || workspaceIDDown == WORKSPACE_INVALID || workspaceIDLeft == m_workspaceBegin->m_id || workspaceIDRight == m_workspaceBegin->m_id || workspaceIDUp == m_workspaceBegin->m_id || workspaceIDDown == m_workspaceBegin->m_id) {
@@ -90,12 +90,12 @@ void CHyprgrid::update(const ITrackpadGesture::STrackpadGestureUpdate& e)
 
     // Validar límites del grid
     // Límites horizontales (izquierda/derecha)
-    bool hitLeftBorder = (m_workspaceBegin->m_id % m_gridSizeX == 1 && m_delta < 0 && !m_vertanim);
-    bool hitRightBorder = (m_workspaceBegin->m_id % m_gridSizeX == 0 && m_delta > 0 && !m_vertanim);
+    bool hitLeftBorder = (m_workspaceBegin->m_id % hyprgrid_grid_size_x == 1 && m_delta < 0 && !m_vertanim);
+    bool hitRightBorder = (m_workspaceBegin->m_id % hyprgrid_grid_size_x == 0 && m_delta > 0 && !m_vertanim);
 
     // Límites verticales (arriba/abajo)
-    bool hitTopBorder = (m_workspaceBegin->m_id <= m_gridSizeX && m_delta < 0 && m_vertanim);
-    bool hitBottomBorder = (m_workspaceBegin->m_id > (m_gridSizeX * (m_gridSizeY - 1)) && m_delta > 0 && m_vertanim);
+    bool hitTopBorder = (m_workspaceBegin->m_id <= hyprgrid_grid_size_x && m_delta < 0 && m_vertanim);
+    bool hitBottomBorder = (m_workspaceBegin->m_id > (hyprgrid_grid_size_x * (hyprgrid_grid_size_y - 1)) && m_delta > 0 && m_vertanim);
 
     if (hitLeftBorder || hitRightBorder || hitTopBorder || hitBottomBorder) {
         m_delta = 0;
@@ -212,8 +212,8 @@ void CHyprgrid::end(const ITrackpadGesture::STrackpadGestureEnd& e)
     // Obtener workspace IDs del grid
     auto workspaceIDLeft = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r-1" : "m-1")).id;
     auto workspaceIDRight = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r+1" : "m+1")).id;
-    auto workspaceIDUp = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r-" + std::to_string(m_gridSizeX) : "m-" + std::to_string(m_gridSizeX))).id;
-    auto workspaceIDDown = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r+" + std::to_string(m_gridSizeX) : "m+" + std::to_string(m_gridSizeX))).id;
+    auto workspaceIDUp = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r-" + std::to_string(hyprgrid_grid_size_x) : "m-" + std::to_string(hyprgrid_grid_size_x))).id;
+    auto workspaceIDDown = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r+" + std::to_string(hyprgrid_grid_size_x) : "m+" + std::to_string(hyprgrid_grid_size_x))).id;
 
     const auto SWIPEDISTANCE = 100;
 
@@ -230,10 +230,10 @@ void CHyprgrid::end(const ITrackpadGesture::STrackpadGestureEnd& e)
     PHLWORKSPACE pSwitchedTo = nullptr;
 
     // Validar límites del grid
-    bool hitLeftBorder = (m_workspaceBegin->m_id % m_gridSizeX == 1 && m_delta == 0 && !m_vertanim);
-    bool hitRightBorder = (m_workspaceBegin->m_id % m_gridSizeX == 0 && m_delta > 0 && !m_vertanim);
-    bool hitTopBorder = (m_workspaceBegin->m_id <= m_gridSizeX && m_delta == 0 && m_vertanim);
-    bool hitBottomBorder = (m_workspaceBegin->m_id > (m_gridSizeX * (m_gridSizeY - 1)) && m_delta > 0 && m_vertanim);
+    bool hitLeftBorder = (m_workspaceBegin->m_id % hyprgrid_grid_size_x == 1 && m_delta == 0 && !m_vertanim);
+    bool hitRightBorder = (m_workspaceBegin->m_id % hyprgrid_grid_size_x == 0 && m_delta > 0 && !m_vertanim);
+    bool hitTopBorder = (m_workspaceBegin->m_id <= hyprgrid_grid_size_x && m_delta == 0 && m_vertanim);
+    bool hitBottomBorder = (m_workspaceBegin->m_id > (hyprgrid_grid_size_x * (hyprgrid_grid_size_y - 1)) && m_delta > 0 && m_vertanim);
 
     debugLog(">>===========Gesto finalizado==========<<");
     debugLog("ID Workspace: " + std::to_string(m_workspaceBegin->m_id));

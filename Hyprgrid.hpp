@@ -6,18 +6,12 @@
 
 class CHyprgrid : public ITrackpadGesture {
 public:
-    CHyprgrid() {
-        m_gridSizeX = hyprgrid_grid_size_x;
-        m_gridSizeY = hyprgrid_grid_size_y;
-    }
+    CHyprgrid() = default;
     virtual ~CHyprgrid() = default;
 
     virtual void begin(const ITrackpadGesture::STrackpadGestureBegin& e);
     virtual void update(const ITrackpadGesture::STrackpadGestureUpdate& e);
     virtual void end(const ITrackpadGesture::STrackpadGestureEnd& e);
-
-    int m_gridSizeX;
-    int m_gridSizeY;
 
 private:
     PHLWORKSPACE m_workspaceBegin = nullptr;
