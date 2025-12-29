@@ -1,5 +1,6 @@
 #include "ExpoGesture.hpp"
 #include "globals.hpp"
+#include <string>
 
 #include <hyprland/src/Compositor.hpp>
 #include <hyprland/src/config/ConfigManager.hpp>
@@ -7,6 +8,13 @@
 #include <hyprland/src/helpers/Monitor.hpp>
 #include <hyprland/src/managers/input/InputManager.hpp>
 #include <hyprland/src/render/Renderer.hpp>
+
+bool isSideWorkspace(int workspaceID, int gridSizeX) {
+    if (gridSizeX <= 0) {
+        return false;
+    }
+    return workspaceID % gridSizeX == 1 || workspaceID % gridSizeX == 0;
+}
 
 void CExpoGesture::begin(const ITrackpadGesture::STrackpadGestureBegin& e)
 {
@@ -38,11 +46,11 @@ void CExpoGesture::update(const ITrackpadGesture::STrackpadGestureUpdate& e)
     const auto XDISTANCE = m_monitor->m_size.x + *PWORKSPACEGAP;
     const auto YDISTANCE = m_monitor->m_size.y + *PWORKSPACEGAP;
 
-    // Calcular workspace IDs para el grid 3x3
+    // Calcular workspace IDs para el grid
     int workspaceIDLeft = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r-1" : "m-1")).id;
     int workspaceIDRight = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r+1" : "m+1")).id;
-    int workspaceIDUp = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r-3" : "m-3")).id;
-    int workspaceIDDown = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r+3" : "m+3")).id;
+    int workspaceIDUp = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r-" + std::to_string(m_gridSizeX) : "m-" + std::to_string(m_gridSizeX))).id;
+    int workspaceIDDown = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r+" + std::to_string(m_gridSizeX) : "m+" + std::to_string(m_gridSizeX))).id;
 
     // Validar workspaces
     if (workspaceIDLeft == WORKSPACE_INVALID || workspaceIDRight == WORKSPACE_INVALID || workspaceIDUp == WORKSPACE_INVALID || workspaceIDDown == WORKSPACE_INVALID || workspaceIDLeft == m_workspaceBegin->m_id || workspaceIDRight == m_workspaceBegin->m_id || workspaceIDUp == m_workspaceBegin->m_id || workspaceIDDown == m_workspaceBegin->m_id) {
@@ -82,14 +90,12 @@ void CExpoGesture::update(const ITrackpadGesture::STrackpadGestureUpdate& e)
 
     // Validar límites del grid
     // Límites horizontales (izquierda/derecha)
-    bool hitLeftBorder = (m_workspaceBegin->m_id == workspaceIDLeft && m_delta < 0 && !m_vertanim);
-    bool hitRightBorder = (m_delta > 0 && m_workspaceBegin->getWindows() == 0 && workspaceIDRight <= m_workspaceBegin->m_id && !m_vertanim) || (m_delta < 0 && m_workspaceBegin->m_id <= workspaceIDLeft && !m_vertanim);
+    bool hitLeftBorder = (m_workspaceBegin->m_id % m_gridSizeX == 1 && m_delta < 0 && !m_vertanim);
+    bool hitRightBorder = (m_workspaceBegin->m_id % m_gridSizeX == 0 && m_delta > 0 && !m_vertanim);
 
     // Límites verticales (arriba/abajo)
-    // Fila superior: workspaces 1, 2, 3
-    bool hitTopBorder = (m_workspaceBegin->m_id <= 3 && m_delta < 0 && m_vertanim);
-    // Fila inferior: workspaces 7, 8, 9
-    bool hitBottomBorder = (m_workspaceBegin->m_id >= 7 && m_delta > 0 && m_vertanim);
+    bool hitTopBorder = (m_workspaceBegin->m_id <= m_gridSizeX && m_delta < 0 && m_vertanim);
+    bool hitBottomBorder = (m_workspaceBegin->m_id > (m_gridSizeX * (m_gridSizeY - 1)) && m_delta > 0 && m_vertanim);
 
     if (hitLeftBorder || hitRightBorder || hitTopBorder || hitBottomBorder) {
         m_delta = 0;
@@ -203,11 +209,11 @@ void CExpoGesture::end(const ITrackpadGesture::STrackpadGestureEnd& e)
     static auto PSWIPEFORC = CConfigValue<Hyprlang::INT>("gestures:workspace_swipe_min_speed_to_force");
     static auto PWORKSPACEGAP = CConfigValue<Hyprlang::INT>("general:gaps_workspaces");
 
-    // Obtener workspace IDs del grid 3x3
+    // Obtener workspace IDs del grid
     auto workspaceIDLeft = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r-1" : "m-1")).id;
     auto workspaceIDRight = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r+1" : "m+1")).id;
-    auto workspaceIDUp = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r-3" : "m-3")).id;
-    auto workspaceIDDown = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r+3" : "m+3")).id;
+    auto workspaceIDUp = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r-" + std::to_string(m_gridSizeX) : "m-" + std::to_string(m_gridSizeX))).id;
+    auto workspaceIDDown = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r+" + std::to_string(m_gridSizeX) : "m+" + std::to_string(m_gridSizeX))).id;
 
     const auto SWIPEDISTANCE = 100;
 
@@ -223,13 +229,11 @@ void CExpoGesture::end(const ITrackpadGesture::STrackpadGestureEnd& e)
 
     PHLWORKSPACE pSwitchedTo = nullptr;
 
-    // Validar límites del grid 3x3 antes de completar el gesto
-
-    // Validar límites del grid 3x3 antes de completar el gesto
-    bool hitLeftBorder = (m_workspaceBegin->m_id % 3 == 1 && m_delta == 0 && !m_vertanim); // Columna izquierda: 1,4,7
-    bool hitRightBorder = (m_workspaceBegin->m_id % 3 == 0 && m_delta == 0 && !m_vertanim); // Columna derecha: 3,6,9
-    bool hitTopBorder = (m_workspaceBegin->m_id <= 3 && m_delta == 0 && m_vertanim); // Fila superior: 1,2,3
-    bool hitBottomBorder = (m_workspaceBegin->m_id >= 7 && m_delta == 0 && m_vertanim); // Fila inferior: 7,8,9
+    // Validar límites del grid
+    bool hitLeftBorder = (m_workspaceBegin->m_id % m_gridSizeX == 1 && m_delta == 0 && !m_vertanim);
+    bool hitRightBorder = (m_workspaceBegin->m_id % m_gridSizeX == 0 && m_delta > 0 && !m_vertanim);
+    bool hitTopBorder = (m_workspaceBegin->m_id <= m_gridSizeX && m_delta == 0 && m_vertanim);
+    bool hitBottomBorder = (m_workspaceBegin->m_id > (m_gridSizeX * (m_gridSizeY - 1)) && m_delta > 0 && m_vertanim);
 
     debugLog(">>===========Gesto finalizado==========<<");
     debugLog("ID Workspace: " + std::to_string(m_workspaceBegin->m_id));
@@ -248,17 +252,6 @@ void CExpoGesture::end(const ITrackpadGesture::STrackpadGestureEnd& e)
 
     if (shouldCancel) {
         // Cancelar gesto - revertir a workspace original
-        // if (abs(m_delta) < 2) {
-        //     if (PWORKSPACEL)
-        //         PWORKSPACEL->m_renderOffset->setValueAndWarp(Vector2D(0, 0));
-        //     if (PWORKSPACER)
-        //         PWORKSPACER->m_renderOffset->setValueAndWarp(Vector2D(0, 0));
-        //     if (PWORKSPACEU)
-        //         PWORKSPACEU->m_renderOffset->setValueAndWarp(Vector2D(0, 0));
-        //     if (PWORKSPACED)
-        //         PWORKSPACED->m_renderOffset->setValueAndWarp(Vector2D(0, 0));
-        //     m_workspaceBegin->m_renderOffset->setValueAndWarp(Vector2D(0, 0));
-        // } else {
         if (m_delta <= 0) {
             // Revertir gesto hacia arriba o izquierda
             if (m_vertanim && PWORKSPACEU) {
@@ -276,8 +269,6 @@ void CExpoGesture::end(const ITrackpadGesture::STrackpadGestureEnd& e)
         }
 
         *m_workspaceBegin->m_renderOffset = Vector2D();
-        // }
-
         pSwitchedTo = m_workspaceBegin;
     } else if (m_delta < 0) {
         // Completar gesto hacia arriba o izquierda

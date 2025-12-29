@@ -118,6 +118,40 @@ static Hyprlang::CParseResult expoGestureKeyword(const char* LHS, const char* RH
     return result;
 }
 
+void setGridSizeX(int x) {
+    if (x > 0) {
+        hyprexpo_grid_size_x = x;
+    }
+}
+
+void setGridSizeY(int y) {
+    if (y > 0) {
+        hyprexpo_grid_size_y = y;
+    }
+}
+
+static Hyprlang::CParseResult gridSizeXKeyword(const char* LHS, const char* RHS)
+{
+    Hyprlang::CParseResult result;
+    try {
+        setGridSizeX(std::stoi(RHS));
+    } catch (...) {
+        result.setError(std::format("Invalid value {} for grid size x", RHS).c_str());
+    }
+    return result;
+}
+
+static Hyprlang::CParseResult gridSizeYKeyword(const char* LHS, const char* RHS)
+{
+    Hyprlang::CParseResult result;
+    try {
+        setGridSizeY(std::stoi(RHS));
+    } catch (...) {
+        result.setError(std::format("Invalid value {} for grid size y", RHS).c_str());
+    }
+    return result;
+}
+
 APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle)
 {
     PHANDLE = handle;
@@ -142,6 +176,10 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle)
     HyprlandAPI::addConfigKeyword(PHANDLE, "hyprexpo-gesture-horizontal", ::expoGestureKeyword, {});
 
     HyprlandAPI::addConfigKeyword(PHANDLE, "hyprexpo-gesture-vertical", ::expoGestureKeyword, {});
+
+    HyprlandAPI::addConfigKeyword(PHANDLE, "hyprexpo-grid-size-x", ::gridSizeXKeyword, {});
+
+    HyprlandAPI::addConfigKeyword(PHANDLE, "hyprexpo-grid-size-y", ::gridSizeYKeyword, {});
 
     return {
         "left-swipe-gesture",
