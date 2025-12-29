@@ -2,6 +2,8 @@
 
 A Hyprland plugin that enables 2D grid-based navigation using touch gestures. This project allows for intuitive workspace switching across both horizontal and vertical axes.
 
+https://github.com/user-attachments/assets/c7d20ddf-8fe6-4315-8763-5e50833bbc40
+
 ## Requirements
 
 - Hyprland headers and development files
