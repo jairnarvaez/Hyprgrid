@@ -5,6 +5,14 @@
 #include <hyprland/src/desktop/DesktopTypes.hpp>
 #include <hyprland/src/managers/input/trackpad/gestures/ITrackpadGesture.hpp>
 
+enum eHyprgridDirection {
+    HYPRGRID_LEFT,
+    HYPRGRID_RIGHT,
+    HYPRGRID_UP,
+    HYPRGRID_DOWN
+};
+
+
 class CHyprgrid : public ITrackpadGesture {
 public:
     CHyprgrid();
@@ -14,6 +22,16 @@ public:
     virtual void update(const ITrackpadGesture::STrackpadGestureUpdate& e);
     virtual void end(const ITrackpadGesture::STrackpadGestureEnd& e);
 
+    void calculateWorkspaceIDs(int currentWorkspaceID, int& workspaceIDLeft, int& workspaceIDRight, 
+                               int& workspaceIDUp, int& workspaceIDDown);
+    void handleGesture(const ITrackpadGesture::STrackpadGestureUpdate& e, 
+                       int workspaceIDLeft, int workspaceIDRight, 
+                       int workspaceIDUp, int workspaceIDDown);
+    void finalizeGesture(const ITrackpadGesture::STrackpadGestureEnd& e, 
+                         int workspaceIDLeft, int workspaceIDRight, 
+                         int workspaceIDUp, int workspaceIDDown);
+    int getAdjacentWorkspaceID(eHyprgridDirection direction);
+    
 private:
     PHLWORKSPACE m_workspaceBegin = nullptr;
     PHLMONITORREF m_monitor;
