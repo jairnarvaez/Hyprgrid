@@ -7,6 +7,7 @@
 #include <hyprland/src/managers/input/trackpad/TrackpadGestures.hpp>
 #include <hyprland/src/managers/input/trackpad/gestures/ITrackpadGesture.hpp>
 #include <hyprutils/string/ConstVarList.hpp>
+#include <cstring>
 
 static bool g_unloading = false;
 
@@ -119,6 +120,21 @@ static Hyprlang::CParseResult gridSizeYKeyword(const char* LHS, const char* RHS)
     return result;
 }
 
+static Hyprlang::CParseResult wrapAroundKeyword(const char* LHS, const char* RHS)
+{
+    Hyprlang::CParseResult result;
+    
+    if (strcmp(RHS, "true") == 0) {
+        hyprgrid_enable_wrap_around = true;
+    } else if (strcmp(RHS, "false") == 0) {
+        hyprgrid_enable_wrap_around = false;
+    } else {
+        result.setError(std::format("Invalid value '{}' for enable wrap. Expected 'true' or 'false'", RHS).c_str());
+    }
+    
+    return result;
+}
+
 APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle)
 {
     PHANDLE = handle;
@@ -130,6 +146,8 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle)
     HyprlandAPI::addConfigKeyword(PHANDLE, "hyprgrid-grid-size-x", ::gridSizeXKeyword, {});
 
     HyprlandAPI::addConfigKeyword(PHANDLE, "hyprgrid-grid-size-y", ::gridSizeYKeyword, {});
+
+    HyprlandAPI::addConfigKeyword(PHANDLE, "hyprgrid-grid-wrap-around", ::wrapAroundKeyword, {});
 
     return {
         "hyprgrid",
