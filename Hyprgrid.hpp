@@ -21,7 +21,6 @@ private:
     int m_initialDirection = 0;
     float m_avgSpeed = 0;
     int m_speedPoints = 0;
-    int m_touchID = 0;
     bool m_vertanim = false;
 
     float m_lastDelta = 0.F;

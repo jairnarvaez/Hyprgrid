@@ -9,13 +9,6 @@
 #include <hyprland/src/managers/input/InputManager.hpp>
 #include <hyprland/src/render/Renderer.hpp>
 
-bool isSideWorkspace(int workspaceID, int gridSizeX) {
-    if (gridSizeX <= 0) {
-        return false;
-    }
-    return workspaceID % gridSizeX == 1 || workspaceID % gridSizeX == 0;
-}
-
 void CHyprgrid::begin(const ITrackpadGesture::STrackpadGestureBegin& e)
 {
     ITrackpadGesture::begin(e);
@@ -233,66 +226,43 @@ void CHyprgrid::end(const ITrackpadGesture::STrackpadGestureEnd& e)
 
         *m_workspaceBegin->m_renderOffset = Vector2D();
         pSwitchedTo = m_workspaceBegin;
-    } else if (m_delta < 0) {
-        // Completar gesto hacia arriba o izquierda
-        PHLWORKSPACE PTARGETWORKSPACE = m_vertanim ? PWORKSPACEU : PWORKSPACEL;
-        int targetWorkspaceID = m_vertanim ? workspaceIDUp : workspaceIDLeft;
-
-        const auto RENDEROFFSET = PTARGETWORKSPACE ? PTARGETWORKSPACE->m_renderOffset->value() : Vector2D();
-
-        if (PTARGETWORKSPACE) {
-            m_monitor->changeWorkspace(targetWorkspaceID);
-        } else {
-            m_monitor->changeWorkspace(g_pCompositor->createNewWorkspace(targetWorkspaceID, m_monitor->m_id));
-            PTARGETWORKSPACE = g_pCompositor->getWorkspaceByID(targetWorkspaceID);
-            PTARGETWORKSPACE->rememberPrevWorkspace(m_workspaceBegin);
-        }
-
-        PTARGETWORKSPACE->m_renderOffset->setValue(RENDEROFFSET);
-        PTARGETWORKSPACE->m_alpha->setValueAndWarp(1.f);
-
-        m_workspaceBegin->m_renderOffset->setValue(RENDEROFFSETMIDDLE);
-        if (m_vertanim)
-            *m_workspaceBegin->m_renderOffset = Vector2D(0.0, YDISTANCE);
-        else
-            *m_workspaceBegin->m_renderOffset = Vector2D(XDISTANCE, 0.0);
-        m_workspaceBegin->m_alpha->setValueAndWarp(1.f);
-
-        g_pInputManager->unconstrainMouse();
-
-        Debug::log(LOG, m_vertanim ? "Ended swipe UP" : "Ended swipe to the left");
-
-        pSwitchedTo = PTARGETWORKSPACE;
     } else {
-        // Completar gesto hacia abajo o derecha
-        PHLWORKSPACE PTARGETWORKSPACE = m_vertanim ? PWORKSPACED : PWORKSPACER;
-        int targetWorkspaceID = m_vertanim ? workspaceIDDown : workspaceIDRight;
+        // Completar gesto
+        bool isMovingUpOrLeft = m_delta < 0;
+        
+        PHLWORKSPACE pTargetWorkspace = m_vertanim ? (isMovingUpOrLeft ? PWORKSPACEU : PWORKSPACED) : (isMovingUpOrLeft ? PWORKSPACEL : PWORKSPACER);
+        int targetWorkspaceID = m_vertanim ? (isMovingUpOrLeft ? workspaceIDUp : workspaceIDDown) : (isMovingUpOrLeft ? workspaceIDLeft : workspaceIDRight);
+        
+        Vector2D finalBeginOffset;
+        if (m_vertanim) {
+            finalBeginOffset = {0.0, isMovingUpOrLeft ? YDISTANCE : -YDISTANCE};
+        } else {
+            finalBeginOffset = {isMovingUpOrLeft ? XDISTANCE : -XDISTANCE, 0.0};
+        }
 
-        const auto RENDEROFFSET = PTARGETWORKSPACE ? PTARGETWORKSPACE->m_renderOffset->value() : Vector2D();
+        const auto RENDEROFFSET = pTargetWorkspace ? pTargetWorkspace->m_renderOffset->value() : Vector2D();
 
-        if (PTARGETWORKSPACE) {
+        if (pTargetWorkspace) {
             m_monitor->changeWorkspace(targetWorkspaceID);
         } else {
             m_monitor->changeWorkspace(g_pCompositor->createNewWorkspace(targetWorkspaceID, m_monitor->m_id));
-            PTARGETWORKSPACE = g_pCompositor->getWorkspaceByID(targetWorkspaceID);
-            PTARGETWORKSPACE->rememberPrevWorkspace(m_workspaceBegin);
+            pTargetWorkspace = g_pCompositor->getWorkspaceByID(targetWorkspaceID);
+            pTargetWorkspace->rememberPrevWorkspace(m_workspaceBegin);
         }
 
-        PTARGETWORKSPACE->m_renderOffset->setValue(RENDEROFFSET);
-        PTARGETWORKSPACE->m_alpha->setValueAndWarp(1.f);
+        pTargetWorkspace->m_renderOffset->setValue(RENDEROFFSET);
+        pTargetWorkspace->m_alpha->setValueAndWarp(1.f);
 
         m_workspaceBegin->m_renderOffset->setValue(RENDEROFFSETMIDDLE);
-        if (m_vertanim)
-            *m_workspaceBegin->m_renderOffset = Vector2D(0.0, -YDISTANCE);
-        else
-            *m_workspaceBegin->m_renderOffset = Vector2D(-XDISTANCE, 0.0);
+        *m_workspaceBegin->m_renderOffset = finalBeginOffset;
         m_workspaceBegin->m_alpha->setValueAndWarp(1.f);
 
         g_pInputManager->unconstrainMouse();
 
-        Debug::log(LOG, m_vertanim ? "Ended swipe DOWN" : "Ended swipe to the right");
+        const char* logMessage = m_vertanim ? (isMovingUpOrLeft ? "Ended swipe UP" : "Ended swipe DOWN") : (isMovingUpOrLeft ? "Ended swipe to the left" : "Ended swipe to the right");
+        Debug::log(LOG, logMessage);
 
-        pSwitchedTo = PTARGETWORKSPACE;
+        pSwitchedTo = pTargetWorkspace;
     }
 
     m_initialDirection = 0;
