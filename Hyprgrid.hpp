@@ -33,4 +33,5 @@ private:
     CConfigValue<Hyprlang::INT>   m_swipeMinSpeedToForce;
     CConfigValue<Hyprlang::INT>   m_swipeDirLockThreshold;
     CConfigValue<Hyprlang::INT>   m_gapsWorkspaces;
+    CConfigValue<Hyprlang::INT>   m_swipeDistance;
 };

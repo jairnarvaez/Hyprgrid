@@ -14,7 +14,8 @@ CHyprgrid::CHyprgrid() :
     m_swipeCancelRatio("gestures:workspace_swipe_cancel_ratio"),
     m_swipeMinSpeedToForce("gestures:workspace_swipe_min_speed_to_force"),
     m_swipeDirLockThreshold("gestures:workspace_swipe_direction_lock_threshold"),
-    m_gapsWorkspaces("general:gaps_workspaces") {
+    m_gapsWorkspaces("general:gaps_workspaces"),
+    m_swipeDistance("gestures:workspace_swipe_distance") {
 }
 
 void CHyprgrid::begin(const ITrackpadGesture::STrackpadGestureBegin& e)
@@ -83,7 +84,7 @@ void CHyprgrid::update(const ITrackpadGesture::STrackpadGestureUpdate& e)
     m_avgSpeed = (m_avgSpeed * m_speedPoints + abs(d)) / (m_speedPoints + 1);
     m_speedPoints++;
 
-    m_delta = std::clamp(m_delta, sc<double>(-100), sc<double>(100));
+    m_delta = std::clamp(m_delta, sc<double>(-*m_swipeDistance), sc<double>(*m_swipeDistance));
 
     // Validar límites del grid
     // Límites horizontales (izquierda/derecha)
@@ -147,7 +148,7 @@ void CHyprgrid::update(const ITrackpadGesture::STrackpadGestureUpdate& e)
 
     // Calcular y aplicar offset de renderizado
     const double sign = m_delta < 0 ? -1.0 : 1.0;
-    const double renderPerc = -m_delta / 100.0;
+    const double renderPerc = -m_delta / *m_swipeDistance;
     
     Vector2D targetOffset, beginOffset;
 
@@ -175,7 +176,7 @@ void CHyprgrid::end(const ITrackpadGesture::STrackpadGestureEnd& e)
     auto workspaceIDUp = getWorkspaceIDNameFromString((*m_swipeUseR ? "r-" + std::to_string(hyprgrid_grid_size_x) : "m-" + std::to_string(hyprgrid_grid_size_x))).id;
     auto workspaceIDDown = getWorkspaceIDNameFromString((*m_swipeUseR ? "r+" + std::to_string(hyprgrid_grid_size_x) : "m+" + std::to_string(hyprgrid_grid_size_x))).id;
 
-    const auto SWIPEDISTANCE = 100;
+
 
     // Obtener punteros a todos los workspaces del grid
     auto PWORKSPACER = g_pCompositor->getWorkspaceByID(workspaceIDRight);
@@ -203,7 +204,7 @@ void CHyprgrid::end(const ITrackpadGesture::STrackpadGestureEnd& e)
         HyprlandAPI::addNotification(PHANDLE, "Se ha alcanzado el borde inferior, cambiando workspace cancelado", { 1.0, 0.2, 0.2, 1.0 }, 5000);
     }
     // Determinar si cancelar o completar el gesto
-    bool shouldCancel = (abs(m_delta) < SWIPEDISTANCE * *m_swipeCancelRatio && (*m_swipeMinSpeedToForce == 0 || (*m_swipeMinSpeedToForce != 0 && m_avgSpeed < *m_swipeMinSpeedToForce))) || abs(m_delta) < 2 || hitLeftBorder || hitRightBorder || hitTopBorder || hitBottomBorder;
+    bool shouldCancel = (abs(m_delta) < *m_swipeDistance * *m_swipeCancelRatio && (*m_swipeMinSpeedToForce == 0 || (*m_swipeMinSpeedToForce != 0 && m_avgSpeed < *m_swipeMinSpeedToForce))) || abs(m_delta) < 2 || hitLeftBorder || hitRightBorder || hitTopBorder || hitBottomBorder;
 
     if (shouldCancel) {
         // Cancelar gesto - revertir a workspace original
