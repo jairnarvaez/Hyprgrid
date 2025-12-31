@@ -16,6 +16,30 @@ APICALL EXPORT std::string PLUGIN_API_VERSION()
     return HYPRLAND_API_VERSION;
 }
 
+static SDispatchResult onGridDispatcher(std::string arg) {
+    int currentWorkspaceID = g_currentWorkspaceID;
+    int targetWorkspaceID = currentWorkspaceID;
+    CHyprgrid hyprgrid;
+    
+    if (arg == "left") {
+        g_pConfigManager->parseKeyword("animation", "workspaces, 1, 1, default, slide");
+        targetWorkspaceID = hyprgrid.getAdjacentWorkspaceID(HYPRGRID_LEFT);
+    } else if (arg == "right") {
+        g_pConfigManager->parseKeyword("animation", "workspaces, 1, 1, default, slide");
+        targetWorkspaceID = hyprgrid.getAdjacentWorkspaceID(HYPRGRID_RIGHT);
+    } else if (arg == "up") {
+        g_pConfigManager->parseKeyword("animation", "workspaces, 1, 1, default, slidevert");
+        targetWorkspaceID = hyprgrid.getAdjacentWorkspaceID(HYPRGRID_UP);
+    } else if (arg == "down") {
+        g_pConfigManager->parseKeyword("animation", "workspaces, 1, 1, default, slidevert");
+        targetWorkspaceID = hyprgrid.getAdjacentWorkspaceID(HYPRGRID_DOWN);
+    }
+	HyprlandAPI::addNotification(PHANDLE, "Cambiando a Workspace" + std::to_string(targetWorkspaceID), { 1.0, 0.2, 0.2, 1.0 }, 5000);
+    g_monitor = g_pCompositor->m_lastMonitor;
+    g_monitor->changeWorkspace(targetWorkspaceID);
+    return {};
+}
+
 static Hyprlang::CParseResult hyprgridGestureKeyword(const char* LHS, const char* RHS)
 {
     Hyprlang::CParseResult result;
@@ -145,6 +169,8 @@ static Hyprlang::CParseResult wrapAroundKeyword(const char* LHS, const char* RHS
 APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle)
 {
     PHANDLE = handle;
+
+    HyprlandAPI::addDispatcherV2(PHANDLE, "hyprgrid:move", ::onGridDispatcher);
 
     HyprlandAPI::addConfigKeyword(PHANDLE, "hyprgrid-gesture", ::hyprgridGestureKeyword, {});
 

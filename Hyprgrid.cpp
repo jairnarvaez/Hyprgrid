@@ -9,7 +9,6 @@
 #include <hyprland/src/render/Renderer.hpp>
 
 CHyprgrid::CHyprgrid() :
-    m_swipeUseR("gestures:workspace_swipe_use_r"),
     m_swipeCancelRatio("gestures:workspace_swipe_cancel_ratio"),
     m_swipeMinSpeedToForce("gestures:workspace_swipe_min_speed_to_force"),
     m_swipeDirLockThreshold("gestures:workspace_swipe_direction_lock_threshold"),
@@ -19,7 +18,7 @@ CHyprgrid::CHyprgrid() :
 
 void CHyprgrid::calculateWorkspaceIDs(int currentWorkspaceID, int& workspaceIDLeft, int& workspaceIDRight, 
                                        int& workspaceIDUp, int& workspaceIDDown) {
-    const std::string mode = *m_swipeUseR ? "r" : "m";
+    const std::string mode = *g_swipeUseR ? "r" : "m";
     const int gridWidth = hyprgrid_grid_size_x;
     
     if (hyprgrid_enable_wrap_around) {
@@ -55,7 +54,7 @@ void CHyprgrid::calculateWorkspaceIDs(int currentWorkspaceID, int& workspaceIDLe
 
 int CHyprgrid::getAdjacentWorkspaceID(eHyprgridDirection direction) {
     int workspaceIDLeft, workspaceIDRight, workspaceIDUp, workspaceIDDown;
-    int currentWorkspaceID = m_workspaceBegin->m_id;
+    int currentWorkspaceID = g_currentWorkspaceID;
     calculateWorkspaceIDs(currentWorkspaceID, workspaceIDLeft, workspaceIDRight, workspaceIDUp, workspaceIDDown);
     
     switch (direction) {
