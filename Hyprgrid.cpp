@@ -104,17 +104,20 @@ void CHyprgrid::update(const ITrackpadGesture::STrackpadGestureUpdate& e)
         return;
     }
 
-    // Determinar workspace objetivo según dirección
-    int targetWorkspaceID;
-    bool isMovingLeft = false;
-
-    if (e.direction == TRACKPAD_GESTURE_DIR_LEFT || e.direction == TRACKPAD_GESTURE_DIR_UP) {
-        targetWorkspaceID = (e.direction == TRACKPAD_GESTURE_DIR_LEFT) ? workspaceIDRight : workspaceIDDown;
-        isMovingLeft = true;
-    }
-    if (e.direction == TRACKPAD_GESTURE_DIR_RIGHT || e.direction == TRACKPAD_GESTURE_DIR_DOWN) {
-        targetWorkspaceID = (e.direction == TRACKPAD_GESTURE_DIR_RIGHT) ? workspaceIDLeft : workspaceIDUp;
-        isMovingLeft = false;
+    // Determinar workspace objetivo y opuesto según la dirección del gesto
+    int targetWorkspaceID, oppositeWorkspaceID;
+    if (e.direction == TRACKPAD_GESTURE_DIR_LEFT) {
+        targetWorkspaceID = workspaceIDRight;
+        oppositeWorkspaceID = workspaceIDLeft;
+    } else if (e.direction == TRACKPAD_GESTURE_DIR_UP) {
+        targetWorkspaceID = workspaceIDDown;
+        oppositeWorkspaceID = workspaceIDUp;
+    } else if (e.direction == TRACKPAD_GESTURE_DIR_RIGHT) {
+        targetWorkspaceID = workspaceIDLeft;
+        oppositeWorkspaceID = workspaceIDRight;
+    } else { // TRACKPAD_GESTURE_DIR_DOWN
+        targetWorkspaceID = workspaceIDUp;
+        oppositeWorkspaceID = workspaceIDDown;
     }
 
     // Bloqueo de dirección
@@ -123,77 +126,46 @@ void CHyprgrid::update(const ITrackpadGesture::STrackpadGestureUpdate& e)
     else if (m_initialDirection == 0 && abs(m_delta) > *PSWIPEDIRLOCKTHRESHOLD)
         m_initialDirection = m_delta < 0 ? -1 : 1;
 
-    // Manejar gesto hacia arriba/izquierda (delta negativo)
-    if (m_delta < 0) {
-        const auto PWORKSPACE = g_pCompositor->getWorkspaceByID(targetWorkspaceID);
+    // Validar y procesar el gesto
+    const auto PWORKSPACE = g_pCompositor->getWorkspaceByID(targetWorkspaceID);
 
-        if (targetWorkspaceID > m_workspaceBegin->m_id || !PWORKSPACE) {
-            m_delta = 0;
-            return;
-        }
+    bool isInvalidMove = (!PWORKSPACE) || (m_delta < 0 && targetWorkspaceID > m_workspaceBegin->m_id) || (m_delta >= 0 && targetWorkspaceID < m_workspaceBegin->m_id);
 
-        PWORKSPACE->m_forceRendering = true;
-        PWORKSPACE->m_alpha->setValueAndWarp(1.f);
-
-        // Ocultar workspace opuesto
-        int oppositeWorkspaceID = (e.direction == TRACKPAD_GESTURE_DIR_LEFT) ? workspaceIDLeft : workspaceIDUp;
-
-        if (targetWorkspaceID != oppositeWorkspaceID && oppositeWorkspaceID != m_workspaceBegin->m_id) {
-            const auto PWORKSPACEOPPOSITE = g_pCompositor->getWorkspaceByID(oppositeWorkspaceID);
-
-            if (PWORKSPACEOPPOSITE) {
-                PWORKSPACEOPPOSITE->m_forceRendering = false;
-                PWORKSPACEOPPOSITE->m_alpha->setValueAndWarp(0.f);
-            }
-        }
-
-        // Aplicar offset según tipo de animación
-        if (m_vertanim) {
-            PWORKSPACE->m_renderOffset->setValueAndWarp(Vector2D(0.0, ((-m_delta) / 100) * YDISTANCE - YDISTANCE));
-            m_workspaceBegin->m_renderOffset->setValueAndWarp(Vector2D(0.0, ((-m_delta) / 100) * YDISTANCE));
-        } else {
-            PWORKSPACE->m_renderOffset->setValueAndWarp(Vector2D(((-m_delta) / 100) * XDISTANCE - XDISTANCE, 0.0));
-            m_workspaceBegin->m_renderOffset->setValueAndWarp(Vector2D(((-m_delta) / 100) * XDISTANCE, 0.0));
-        }
-
-        PWORKSPACE->updateWindowDecos();
-    }
-    // Manejar gesto hacia abajo/derecha (delta positivo)
-    else {
-        const auto PWORKSPACE = g_pCompositor->getWorkspaceByID(targetWorkspaceID);
-
-        if (targetWorkspaceID < m_workspaceBegin->m_id || !PWORKSPACE) {
-            m_delta = 0;
-            return;
-        }
-
-        PWORKSPACE->m_forceRendering = true;
-        PWORKSPACE->m_alpha->setValueAndWarp(1.f);
-
-        // Ocultar workspace opuesto
-        int oppositeWorkspaceID = (e.direction == TRACKPAD_GESTURE_DIR_RIGHT) ? workspaceIDRight : workspaceIDDown;
-
-        if (targetWorkspaceID != oppositeWorkspaceID && oppositeWorkspaceID != m_workspaceBegin->m_id) {
-            const auto PWORKSPACEOPPOSITE = g_pCompositor->getWorkspaceByID(oppositeWorkspaceID);
-
-            if (PWORKSPACEOPPOSITE) {
-                PWORKSPACEOPPOSITE->m_forceRendering = false;
-                PWORKSPACEOPPOSITE->m_alpha->setValueAndWarp(0.f);
-            }
-        }
-
-        // Aplicar offset según tipo de animación
-        if (m_vertanim) {
-            PWORKSPACE->m_renderOffset->setValueAndWarp(Vector2D(0.0, ((-m_delta) / 100) * YDISTANCE + YDISTANCE));
-            m_workspaceBegin->m_renderOffset->setValueAndWarp(Vector2D(0.0, ((-m_delta) / 100) * YDISTANCE));
-        } else {
-            PWORKSPACE->m_renderOffset->setValueAndWarp(Vector2D(((-m_delta) / 100) * XDISTANCE + XDISTANCE, 0.0));
-            m_workspaceBegin->m_renderOffset->setValueAndWarp(Vector2D(((-m_delta) / 100) * XDISTANCE, 0.0));
-        }
-
-        PWORKSPACE->updateWindowDecos();
+    if (isInvalidMove) {
+        m_delta = 0;
+        return;
     }
 
+    PWORKSPACE->m_forceRendering = true;
+    PWORKSPACE->m_alpha->setValueAndWarp(1.f);
+
+    // Ocultar workspace opuesto
+    if (targetWorkspaceID != oppositeWorkspaceID && oppositeWorkspaceID != m_workspaceBegin->m_id) {
+        const auto PWORKSPACEOPPOSITE = g_pCompositor->getWorkspaceByID(oppositeWorkspaceID);
+        if (PWORKSPACEOPPOSITE) {
+            PWORKSPACEOPPOSITE->m_forceRendering = false;
+            PWORKSPACEOPPOSITE->m_alpha->setValueAndWarp(0.f);
+        }
+    }
+
+    // Calcular y aplicar offset de renderizado
+    const double sign = m_delta < 0 ? -1.0 : 1.0;
+    const double renderPerc = -m_delta / 100.0;
+    
+    Vector2D targetOffset, beginOffset;
+
+    if (m_vertanim) {
+        targetOffset = {0.0, (renderPerc + sign) * YDISTANCE};
+        beginOffset  = {0.0, renderPerc * YDISTANCE};
+    } else {
+        targetOffset = {(renderPerc + sign) * XDISTANCE, 0.0};
+        beginOffset  = {renderPerc * XDISTANCE, 0.0};
+    }
+
+    PWORKSPACE->m_renderOffset->setValueAndWarp(targetOffset);
+    m_workspaceBegin->m_renderOffset->setValueAndWarp(beginOffset);
+
+    PWORKSPACE->updateWindowDecos();
     g_pHyprRenderer->damageMonitor(m_monitor.lock());
     m_workspaceBegin->updateWindowDecos();
 }
