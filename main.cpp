@@ -1,6 +1,5 @@
 #include "Hyprgrid.hpp"
 #include "globals.hpp"
-#include <any>
 #include <hyprland/src/Compositor.hpp>
 #include <hyprland/src/config/ConfigManager.hpp>
 #include <hyprland/src/managers/input/InputManager.hpp>
@@ -9,30 +8,7 @@
 #include <hyprland/src/managers/input/trackpad/gestures/ITrackpadGesture.hpp>
 #include <hyprutils/string/ConstVarList.hpp>
 
-#include <chrono>
-#include <cxxabi.h>
-#include <fstream>
-#include <typeinfo>
-
 static bool g_unloading = false;
-
-void debugLog(const std::string& message)
-{
-    std::ofstream logFile("/tmp/mi_plugin_hyprland.log", std::ios::app);
-    auto now = std::chrono::system_clock::now();
-    auto time = std::chrono::system_clock::to_time_t(now);
-    logFile << std::ctime(&time) << ": " << message << std::endl;
-    logFile.close();
-}
-
-std::string getTypeName(const std::type_info& type)
-{
-    int status;
-    char* demangled = abi::__cxa_demangle(type.name(), nullptr, nullptr, &status);
-    std::string result = (status == 0) ? demangled : type.name();
-    free(demangled);
-    return result;
-}
 
 APICALL EXPORT std::string PLUGIN_API_VERSION()
 {
@@ -69,38 +45,35 @@ static Hyprlang::CParseResult hyprgridGestureKeyword(const char* LHS, const char
         return result;
     }
 
-    int startDataIdx = 2;
+    int argIndex = 2;
     uint32_t modMask = 0;
     float deltaScale = 1.F;
 
-    while (true) {
-
-        if (data[startDataIdx].starts_with("mod:")) {
-            modMask = g_pKeybindManager->stringToModMask(std::string { data[startDataIdx].substr(4) });
-            startDataIdx++;
-            continue;
-        } else if (data[startDataIdx].starts_with("scale:")) {
+    for (; argIndex < data.size(); ++argIndex) {
+        const auto& arg = data[argIndex];
+        if (arg.starts_with("mod:")) {
+            modMask = g_pKeybindManager->stringToModMask(std::string { arg.substr(4) });
+        } else if (arg.starts_with("scale:")) {
             try {
-                deltaScale = std::clamp(std::stof(std::string { data[startDataIdx].substr(6) }), 0.1F, 10.F);
-                startDataIdx++;
-                continue;
+                deltaScale = std::clamp(std::stof(std::string { arg.substr(6) }), 0.1F, 10.F);
             } catch (...) {
-                result.setError(std::format("Invalid delta scale: {}", std::string { data[startDataIdx].substr(6) }).c_str());
+                result.setError(std::format("Invalid delta scale: {}", std::string { arg.substr(6) }).c_str());
                 return result;
             }
+        } else {
+            // Not a mod or scale, so it must be the gesture command (expo/unset)
+            break;
         }
-
-        break;
     }
 
     std::expected<void, std::string> resultFromGesture;
 
-    if (data[startDataIdx] == "expo")
+    if (data[argIndex] == "expo")
         resultFromGesture = g_pTrackpadGestures->addGesture(makeUnique<CHyprgrid>(), fingerCount, direction, modMask, deltaScale);
-    else if (data[startDataIdx] == "unset")
+    else if (data[argIndex] == "unset")
         resultFromGesture = g_pTrackpadGestures->removeGesture(fingerCount, direction, modMask, deltaScale);
     else {
-        result.setError(std::format("Invalid gesture: {}", data[startDataIdx]).c_str());
+        result.setError(std::format("Invalid gesture: {}", data[argIndex]).c_str());
         return result;
     }
 
