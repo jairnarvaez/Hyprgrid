@@ -39,14 +39,7 @@ static Hyprlang::CParseResult hyprgridGestureKeyword(const char* LHS, const char
         return result;
     }
 
-    direction = g_pTrackpadGestures->dirForString(data[1]);
-
-    if (direction == TRACKPAD_GESTURE_DIR_NONE) {
-        result.setError(std::format("Invalid direction: {}", data[1]).c_str());
-        return result;
-    }
-
-    int argIndex = 2;
+    int argIndex = 1;
     uint32_t modMask = 0;
     float deltaScale = 1.F;
 
@@ -69,8 +62,22 @@ static Hyprlang::CParseResult hyprgridGestureKeyword(const char* LHS, const char
 
     std::expected<void, std::string> resultFromGesture;
 
-    if (data[argIndex] == "expo")
+    if (data[argIndex] == "vertical"){
+        direction = g_pTrackpadGestures->dirForString("vertical");
+        if (direction == TRACKPAD_GESTURE_DIR_NONE) {
+            result.setError(std::format("Invalid direction: {}", data[1]).c_str());
+            return result;
+        }
         resultFromGesture = g_pTrackpadGestures->addGesture(makeUnique<CHyprgrid>(), fingerCount, direction, modMask, deltaScale);
+    }
+    else if (data[argIndex] == "horizontal"){ 
+        direction = g_pTrackpadGestures->dirForString("horizontal");
+        if (direction == TRACKPAD_GESTURE_DIR_NONE) {
+            result.setError(std::format("Invalid direction: {}", data[1]).c_str());
+            return result;
+        }
+        resultFromGesture = g_pTrackpadGestures->addGesture(makeUnique<CHyprgrid>(), fingerCount, direction, modMask, deltaScale);
+    }    
     else if (data[argIndex] == "unset")
         resultFromGesture = g_pTrackpadGestures->removeGesture(fingerCount, direction, modMask, deltaScale);
     else {
@@ -139,9 +146,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle)
 {
     PHANDLE = handle;
 
-    HyprlandAPI::addConfigKeyword(PHANDLE, "hyprgrid-gesture-horizontal", ::hyprgridGestureKeyword, {});
-
-    HyprlandAPI::addConfigKeyword(PHANDLE, "hyprgrid-gesture-vertical", ::hyprgridGestureKeyword, {});
+    HyprlandAPI::addConfigKeyword(PHANDLE, "hyprgrid-gesture", ::hyprgridGestureKeyword, {});
 
     HyprlandAPI::addConfigKeyword(PHANDLE, "hyprgrid-grid-size-x", ::gridSizeXKeyword, {});
 
