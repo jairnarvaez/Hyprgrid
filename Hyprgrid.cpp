@@ -9,11 +9,13 @@
 #include <hyprland/src/managers/input/InputManager.hpp>
 #include <hyprland/src/render/Renderer.hpp>
 
-bool isSideWorkspace(int workspaceID, int gridSizeX) {
-    if (gridSizeX <= 0) {
-        return false;
-    }
-    return workspaceID % gridSizeX == 1 || workspaceID % gridSizeX == 0;
+CHyprgrid::CHyprgrid() :
+    m_swipeUseR("gestures:workspace_swipe_use_r"),
+    m_swipeCancelRatio("gestures:workspace_swipe_cancel_ratio"),
+    m_swipeMinSpeedToForce("gestures:workspace_swipe_min_speed_to_force"),
+    m_swipeDirLockThreshold("gestures:workspace_swipe_direction_lock_threshold"),
+    m_gapsWorkspaces("general:gaps_workspaces"),
+    m_swipeDistance("gestures:workspace_swipe_distance") {
 }
 
 void CHyprgrid::begin(const ITrackpadGesture::STrackpadGestureBegin& e)
@@ -39,18 +41,14 @@ void CHyprgrid::update(const ITrackpadGesture::STrackpadGestureUpdate& e)
         return;
     }
 
-    static auto PSWIPEUSER = CConfigValue<Hyprlang::INT>("gestures:workspace_swipe_use_r");
-    static auto PSWIPEDIRLOCKTHRESHOLD = CConfigValue<Hyprlang::INT>("gestures:workspace_swipe_direction_lock_threshold");
-    static auto PWORKSPACEGAP = CConfigValue<Hyprlang::INT>("general:gaps_workspaces");
-
-    const auto XDISTANCE = m_monitor->m_size.x + *PWORKSPACEGAP;
-    const auto YDISTANCE = m_monitor->m_size.y + *PWORKSPACEGAP;
+    const auto XDISTANCE = m_monitor->m_size.x + *m_gapsWorkspaces;
+    const auto YDISTANCE = m_monitor->m_size.y + *m_gapsWorkspaces;
 
     // Calcular workspace IDs para el grid
-    int workspaceIDLeft = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r-1" : "m-1")).id;
-    int workspaceIDRight = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r+1" : "m+1")).id;
-    int workspaceIDUp = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r-" + std::to_string(hyprgrid_grid_size_x) : "m-" + std::to_string(hyprgrid_grid_size_x))).id;
-    int workspaceIDDown = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r+" + std::to_string(hyprgrid_grid_size_x) : "m+" + std::to_string(hyprgrid_grid_size_x))).id;
+    int workspaceIDLeft = getWorkspaceIDNameFromString((*m_swipeUseR ? "r-1" : "m-1")).id;
+    int workspaceIDRight = getWorkspaceIDNameFromString((*m_swipeUseR ? "r+1" : "m+1")).id;
+    int workspaceIDUp = getWorkspaceIDNameFromString((*m_swipeUseR ? "r-" + std::to_string(hyprgrid_grid_size_x) : "m-" + std::to_string(hyprgrid_grid_size_x))).id;
+    int workspaceIDDown = getWorkspaceIDNameFromString((*m_swipeUseR ? "r+" + std::to_string(hyprgrid_grid_size_x) : "m+" + std::to_string(hyprgrid_grid_size_x))).id;
 
     // Validar workspaces
     if (workspaceIDLeft == WORKSPACE_INVALID || workspaceIDRight == WORKSPACE_INVALID || workspaceIDUp == WORKSPACE_INVALID || workspaceIDDown == WORKSPACE_INVALID || workspaceIDLeft == m_workspaceBegin->m_id || workspaceIDRight == m_workspaceBegin->m_id || workspaceIDUp == m_workspaceBegin->m_id || workspaceIDDown == m_workspaceBegin->m_id) {
@@ -86,7 +84,7 @@ void CHyprgrid::update(const ITrackpadGesture::STrackpadGestureUpdate& e)
     m_avgSpeed = (m_avgSpeed * m_speedPoints + abs(d)) / (m_speedPoints + 1);
     m_speedPoints++;
 
-    m_delta = std::clamp(m_delta, sc<double>(-100), sc<double>(100));
+    m_delta = std::clamp(m_delta, sc<double>(-*m_swipeDistance), sc<double>(*m_swipeDistance));
 
     // Validar límites del grid
     // Límites horizontales (izquierda/derecha)
@@ -104,114 +102,81 @@ void CHyprgrid::update(const ITrackpadGesture::STrackpadGestureUpdate& e)
         return;
     }
 
-    // Determinar workspace objetivo según dirección
-    int targetWorkspaceID;
-    bool isMovingLeft = false;
-
-    if (e.direction == TRACKPAD_GESTURE_DIR_LEFT || e.direction == TRACKPAD_GESTURE_DIR_UP) {
-        targetWorkspaceID = (e.direction == TRACKPAD_GESTURE_DIR_LEFT) ? workspaceIDRight : workspaceIDDown;
-        isMovingLeft = true;
-    }
-    if (e.direction == TRACKPAD_GESTURE_DIR_RIGHT || e.direction == TRACKPAD_GESTURE_DIR_DOWN) {
-        targetWorkspaceID = (e.direction == TRACKPAD_GESTURE_DIR_RIGHT) ? workspaceIDLeft : workspaceIDUp;
-        isMovingLeft = false;
+    // Determinar workspace objetivo y opuesto según la dirección del gesto
+    int targetWorkspaceID, oppositeWorkspaceID;
+    if (e.direction == TRACKPAD_GESTURE_DIR_LEFT) {
+        targetWorkspaceID = workspaceIDRight;
+        oppositeWorkspaceID = workspaceIDLeft;
+    } else if (e.direction == TRACKPAD_GESTURE_DIR_UP) {
+        targetWorkspaceID = workspaceIDDown;
+        oppositeWorkspaceID = workspaceIDUp;
+    } else if (e.direction == TRACKPAD_GESTURE_DIR_RIGHT) {
+        targetWorkspaceID = workspaceIDLeft;
+        oppositeWorkspaceID = workspaceIDRight;
+    } else { // TRACKPAD_GESTURE_DIR_DOWN
+        targetWorkspaceID = workspaceIDUp;
+        oppositeWorkspaceID = workspaceIDDown;
     }
 
     // Bloqueo de dirección
     if (m_initialDirection != 0 && m_initialDirection != (m_delta < 0 ? -1 : 1))
         m_delta = 0;
-    else if (m_initialDirection == 0 && abs(m_delta) > *PSWIPEDIRLOCKTHRESHOLD)
+    else if (m_initialDirection == 0 && abs(m_delta) > *m_swipeDirLockThreshold)
         m_initialDirection = m_delta < 0 ? -1 : 1;
 
-    // Manejar gesto hacia arriba/izquierda (delta negativo)
-    if (m_delta < 0) {
-        const auto PWORKSPACE = g_pCompositor->getWorkspaceByID(targetWorkspaceID);
+    // Validar y procesar el gesto
+    const auto PWORKSPACE = g_pCompositor->getWorkspaceByID(targetWorkspaceID);
 
-        if (targetWorkspaceID > m_workspaceBegin->m_id || !PWORKSPACE) {
-            m_delta = 0;
-            return;
-        }
+    bool isInvalidMove = (!PWORKSPACE) || (m_delta < 0 && targetWorkspaceID > m_workspaceBegin->m_id) || (m_delta >= 0 && targetWorkspaceID < m_workspaceBegin->m_id);
 
-        PWORKSPACE->m_forceRendering = true;
-        PWORKSPACE->m_alpha->setValueAndWarp(1.f);
-
-        // Ocultar workspace opuesto
-        int oppositeWorkspaceID = (e.direction == TRACKPAD_GESTURE_DIR_LEFT) ? workspaceIDLeft : workspaceIDUp;
-
-        if (targetWorkspaceID != oppositeWorkspaceID && oppositeWorkspaceID != m_workspaceBegin->m_id) {
-            const auto PWORKSPACEOPPOSITE = g_pCompositor->getWorkspaceByID(oppositeWorkspaceID);
-
-            if (PWORKSPACEOPPOSITE) {
-                PWORKSPACEOPPOSITE->m_forceRendering = false;
-                PWORKSPACEOPPOSITE->m_alpha->setValueAndWarp(0.f);
-            }
-        }
-
-        // Aplicar offset según tipo de animación
-        if (m_vertanim) {
-            PWORKSPACE->m_renderOffset->setValueAndWarp(Vector2D(0.0, ((-m_delta) / 100) * YDISTANCE - YDISTANCE));
-            m_workspaceBegin->m_renderOffset->setValueAndWarp(Vector2D(0.0, ((-m_delta) / 100) * YDISTANCE));
-        } else {
-            PWORKSPACE->m_renderOffset->setValueAndWarp(Vector2D(((-m_delta) / 100) * XDISTANCE - XDISTANCE, 0.0));
-            m_workspaceBegin->m_renderOffset->setValueAndWarp(Vector2D(((-m_delta) / 100) * XDISTANCE, 0.0));
-        }
-
-        PWORKSPACE->updateWindowDecos();
-    }
-    // Manejar gesto hacia abajo/derecha (delta positivo)
-    else {
-        const auto PWORKSPACE = g_pCompositor->getWorkspaceByID(targetWorkspaceID);
-
-        if (targetWorkspaceID < m_workspaceBegin->m_id || !PWORKSPACE) {
-            m_delta = 0;
-            return;
-        }
-
-        PWORKSPACE->m_forceRendering = true;
-        PWORKSPACE->m_alpha->setValueAndWarp(1.f);
-
-        // Ocultar workspace opuesto
-        int oppositeWorkspaceID = (e.direction == TRACKPAD_GESTURE_DIR_RIGHT) ? workspaceIDRight : workspaceIDDown;
-
-        if (targetWorkspaceID != oppositeWorkspaceID && oppositeWorkspaceID != m_workspaceBegin->m_id) {
-            const auto PWORKSPACEOPPOSITE = g_pCompositor->getWorkspaceByID(oppositeWorkspaceID);
-
-            if (PWORKSPACEOPPOSITE) {
-                PWORKSPACEOPPOSITE->m_forceRendering = false;
-                PWORKSPACEOPPOSITE->m_alpha->setValueAndWarp(0.f);
-            }
-        }
-
-        // Aplicar offset según tipo de animación
-        if (m_vertanim) {
-            PWORKSPACE->m_renderOffset->setValueAndWarp(Vector2D(0.0, ((-m_delta) / 100) * YDISTANCE + YDISTANCE));
-            m_workspaceBegin->m_renderOffset->setValueAndWarp(Vector2D(0.0, ((-m_delta) / 100) * YDISTANCE));
-        } else {
-            PWORKSPACE->m_renderOffset->setValueAndWarp(Vector2D(((-m_delta) / 100) * XDISTANCE + XDISTANCE, 0.0));
-            m_workspaceBegin->m_renderOffset->setValueAndWarp(Vector2D(((-m_delta) / 100) * XDISTANCE, 0.0));
-        }
-
-        PWORKSPACE->updateWindowDecos();
+    if (isInvalidMove) {
+        m_delta = 0;
+        return;
     }
 
+    PWORKSPACE->m_forceRendering = true;
+    PWORKSPACE->m_alpha->setValueAndWarp(1.f);
+
+    // Ocultar workspace opuesto
+    if (targetWorkspaceID != oppositeWorkspaceID && oppositeWorkspaceID != m_workspaceBegin->m_id) {
+        const auto PWORKSPACEOPPOSITE = g_pCompositor->getWorkspaceByID(oppositeWorkspaceID);
+        if (PWORKSPACEOPPOSITE) {
+            PWORKSPACEOPPOSITE->m_forceRendering = false;
+            PWORKSPACEOPPOSITE->m_alpha->setValueAndWarp(0.f);
+        }
+    }
+
+    // Calcular y aplicar offset de renderizado
+    const double sign = m_delta < 0 ? -1.0 : 1.0;
+    const double renderPerc = -m_delta / *m_swipeDistance;
+    
+    Vector2D targetOffset, beginOffset;
+
+    if (m_vertanim) {
+        targetOffset = {0.0, (renderPerc + sign) * YDISTANCE};
+        beginOffset  = {0.0, renderPerc * YDISTANCE};
+    } else {
+        targetOffset = {(renderPerc + sign) * XDISTANCE, 0.0};
+        beginOffset  = {renderPerc * XDISTANCE, 0.0};
+    }
+
+    PWORKSPACE->m_renderOffset->setValueAndWarp(targetOffset);
+    m_workspaceBegin->m_renderOffset->setValueAndWarp(beginOffset);
+
+    PWORKSPACE->updateWindowDecos();
     g_pHyprRenderer->damageMonitor(m_monitor.lock());
     m_workspaceBegin->updateWindowDecos();
 }
 
 void CHyprgrid::end(const ITrackpadGesture::STrackpadGestureEnd& e)
 {
-    static auto PSWIPEPERC = CConfigValue<Hyprlang::FLOAT>("gestures:workspace_swipe_cancel_ratio");
-    static auto PSWIPEUSER = CConfigValue<Hyprlang::INT>("gestures:workspace_swipe_use_r");
-    static auto PSWIPEFORC = CConfigValue<Hyprlang::INT>("gestures:workspace_swipe_min_speed_to_force");
-    static auto PWORKSPACEGAP = CConfigValue<Hyprlang::INT>("general:gaps_workspaces");
-
     // Obtener workspace IDs del grid
-    auto workspaceIDLeft = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r-1" : "m-1")).id;
-    auto workspaceIDRight = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r+1" : "m+1")).id;
-    auto workspaceIDUp = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r-" + std::to_string(hyprgrid_grid_size_x) : "m-" + std::to_string(hyprgrid_grid_size_x))).id;
-    auto workspaceIDDown = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r+" + std::to_string(hyprgrid_grid_size_x) : "m+" + std::to_string(hyprgrid_grid_size_x))).id;
+    auto workspaceIDLeft = getWorkspaceIDNameFromString((*m_swipeUseR ? "r-1" : "m-1")).id;
+    auto workspaceIDRight = getWorkspaceIDNameFromString((*m_swipeUseR ? "r+1" : "m+1")).id;
+    auto workspaceIDUp = getWorkspaceIDNameFromString((*m_swipeUseR ? "r-" + std::to_string(hyprgrid_grid_size_x) : "m-" + std::to_string(hyprgrid_grid_size_x))).id;
+    auto workspaceIDDown = getWorkspaceIDNameFromString((*m_swipeUseR ? "r+" + std::to_string(hyprgrid_grid_size_x) : "m+" + std::to_string(hyprgrid_grid_size_x))).id;
 
-    const auto SWIPEDISTANCE = 100;
+
 
     // Obtener punteros a todos los workspaces del grid
     auto PWORKSPACER = g_pCompositor->getWorkspaceByID(workspaceIDRight);
@@ -220,8 +185,8 @@ void CHyprgrid::end(const ITrackpadGesture::STrackpadGestureEnd& e)
     auto PWORKSPACED = g_pCompositor->getWorkspaceByID(workspaceIDDown);
 
     const auto RENDEROFFSETMIDDLE = m_workspaceBegin->m_renderOffset->value();
-    const auto XDISTANCE = m_monitor->m_size.x + *PWORKSPACEGAP;
-    const auto YDISTANCE = m_monitor->m_size.y + *PWORKSPACEGAP;
+    const auto XDISTANCE = m_monitor->m_size.x + *m_gapsWorkspaces;
+    const auto YDISTANCE = m_monitor->m_size.y + *m_gapsWorkspaces;
 
     PHLWORKSPACE pSwitchedTo = nullptr;
 
@@ -239,7 +204,7 @@ void CHyprgrid::end(const ITrackpadGesture::STrackpadGestureEnd& e)
         HyprlandAPI::addNotification(PHANDLE, "Se ha alcanzado el borde inferior, cambiando workspace cancelado", { 1.0, 0.2, 0.2, 1.0 }, 5000);
     }
     // Determinar si cancelar o completar el gesto
-    bool shouldCancel = (abs(m_delta) < SWIPEDISTANCE * *PSWIPEPERC && (*PSWIPEFORC == 0 || (*PSWIPEFORC != 0 && m_avgSpeed < *PSWIPEFORC))) || abs(m_delta) < 2 || hitLeftBorder || hitRightBorder || hitTopBorder || hitBottomBorder;
+    bool shouldCancel = (abs(m_delta) < *m_swipeDistance * *m_swipeCancelRatio && (*m_swipeMinSpeedToForce == 0 || (*m_swipeMinSpeedToForce != 0 && m_avgSpeed < *m_swipeMinSpeedToForce))) || abs(m_delta) < 2 || hitLeftBorder || hitRightBorder || hitTopBorder || hitBottomBorder;
 
     if (shouldCancel) {
         // Cancelar gesto - revertir a workspace original
@@ -261,66 +226,43 @@ void CHyprgrid::end(const ITrackpadGesture::STrackpadGestureEnd& e)
 
         *m_workspaceBegin->m_renderOffset = Vector2D();
         pSwitchedTo = m_workspaceBegin;
-    } else if (m_delta < 0) {
-        // Completar gesto hacia arriba o izquierda
-        PHLWORKSPACE PTARGETWORKSPACE = m_vertanim ? PWORKSPACEU : PWORKSPACEL;
-        int targetWorkspaceID = m_vertanim ? workspaceIDUp : workspaceIDLeft;
-
-        const auto RENDEROFFSET = PTARGETWORKSPACE ? PTARGETWORKSPACE->m_renderOffset->value() : Vector2D();
-
-        if (PTARGETWORKSPACE) {
-            m_monitor->changeWorkspace(targetWorkspaceID);
-        } else {
-            m_monitor->changeWorkspace(g_pCompositor->createNewWorkspace(targetWorkspaceID, m_monitor->m_id));
-            PTARGETWORKSPACE = g_pCompositor->getWorkspaceByID(targetWorkspaceID);
-            PTARGETWORKSPACE->rememberPrevWorkspace(m_workspaceBegin);
-        }
-
-        PTARGETWORKSPACE->m_renderOffset->setValue(RENDEROFFSET);
-        PTARGETWORKSPACE->m_alpha->setValueAndWarp(1.f);
-
-        m_workspaceBegin->m_renderOffset->setValue(RENDEROFFSETMIDDLE);
-        if (m_vertanim)
-            *m_workspaceBegin->m_renderOffset = Vector2D(0.0, YDISTANCE);
-        else
-            *m_workspaceBegin->m_renderOffset = Vector2D(XDISTANCE, 0.0);
-        m_workspaceBegin->m_alpha->setValueAndWarp(1.f);
-
-        g_pInputManager->unconstrainMouse();
-
-        Debug::log(LOG, m_vertanim ? "Ended swipe UP" : "Ended swipe to the left");
-
-        pSwitchedTo = PTARGETWORKSPACE;
     } else {
-        // Completar gesto hacia abajo o derecha
-        PHLWORKSPACE PTARGETWORKSPACE = m_vertanim ? PWORKSPACED : PWORKSPACER;
-        int targetWorkspaceID = m_vertanim ? workspaceIDDown : workspaceIDRight;
+        // Completar gesto
+        bool isMovingUpOrLeft = m_delta < 0;
+        
+        PHLWORKSPACE pTargetWorkspace = m_vertanim ? (isMovingUpOrLeft ? PWORKSPACEU : PWORKSPACED) : (isMovingUpOrLeft ? PWORKSPACEL : PWORKSPACER);
+        int targetWorkspaceID = m_vertanim ? (isMovingUpOrLeft ? workspaceIDUp : workspaceIDDown) : (isMovingUpOrLeft ? workspaceIDLeft : workspaceIDRight);
+        
+        Vector2D finalBeginOffset;
+        if (m_vertanim) {
+            finalBeginOffset = {0.0, isMovingUpOrLeft ? YDISTANCE : -YDISTANCE};
+        } else {
+            finalBeginOffset = {isMovingUpOrLeft ? XDISTANCE : -XDISTANCE, 0.0};
+        }
 
-        const auto RENDEROFFSET = PTARGETWORKSPACE ? PTARGETWORKSPACE->m_renderOffset->value() : Vector2D();
+        const auto RENDEROFFSET = pTargetWorkspace ? pTargetWorkspace->m_renderOffset->value() : Vector2D();
 
-        if (PTARGETWORKSPACE) {
+        if (pTargetWorkspace) {
             m_monitor->changeWorkspace(targetWorkspaceID);
         } else {
             m_monitor->changeWorkspace(g_pCompositor->createNewWorkspace(targetWorkspaceID, m_monitor->m_id));
-            PTARGETWORKSPACE = g_pCompositor->getWorkspaceByID(targetWorkspaceID);
-            PTARGETWORKSPACE->rememberPrevWorkspace(m_workspaceBegin);
+            pTargetWorkspace = g_pCompositor->getWorkspaceByID(targetWorkspaceID);
+            pTargetWorkspace->rememberPrevWorkspace(m_workspaceBegin);
         }
 
-        PTARGETWORKSPACE->m_renderOffset->setValue(RENDEROFFSET);
-        PTARGETWORKSPACE->m_alpha->setValueAndWarp(1.f);
+        pTargetWorkspace->m_renderOffset->setValue(RENDEROFFSET);
+        pTargetWorkspace->m_alpha->setValueAndWarp(1.f);
 
         m_workspaceBegin->m_renderOffset->setValue(RENDEROFFSETMIDDLE);
-        if (m_vertanim)
-            *m_workspaceBegin->m_renderOffset = Vector2D(0.0, -YDISTANCE);
-        else
-            *m_workspaceBegin->m_renderOffset = Vector2D(-XDISTANCE, 0.0);
+        *m_workspaceBegin->m_renderOffset = finalBeginOffset;
         m_workspaceBegin->m_alpha->setValueAndWarp(1.f);
 
         g_pInputManager->unconstrainMouse();
 
-        Debug::log(LOG, m_vertanim ? "Ended swipe DOWN" : "Ended swipe to the right");
+        const char* logMessage = m_vertanim ? (isMovingUpOrLeft ? "Ended swipe UP" : "Ended swipe DOWN") : (isMovingUpOrLeft ? "Ended swipe to the left" : "Ended swipe to the right");
+        Debug::log(LOG, logMessage);
 
-        pSwitchedTo = PTARGETWORKSPACE;
+        pSwitchedTo = pTargetWorkspace;
     }
 
     m_initialDirection = 0;
