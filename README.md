@@ -47,6 +47,7 @@ hyprgrid-gesture-horizontal = 4, horizontal, expo
 hyprgrid-gesture-vertical = 4, vertical, expo
 hyprgrid-grid-size-x = 3
 hyprgrid-grid-size-y = 3
+hyprgrid-grid-wrap-around = false
 ```
 
 ```
@@ -62,9 +63,13 @@ gestures {
 
 ### TODO
 
-[ ] **Configurable Wrap-Around Navigation**: Add an option to allow "wrapping around" the grid, so swiping right on the
+[x] **Configurable Wrap-Around Navigation**: Add an option to allow "wrapping around" the grid, so swiping right on the
    last workspace of a row moves to the first, and swiping left on the first moves to the last (and similarly for
    vertical navigation).
+```
+   hyprgrid-grid-wrap-around = true
+```
+https://github.com/user-attachments/assets/7271fc46-41db-43b2-86c1-9d698cd699f5
    
 [ ] **Keyboard Shortcut Navigation**: Implement keybindings to navigate the workspace grid (e.g., using arrow keys with a
    modifier), making the plugin accessible without a trackpad.
