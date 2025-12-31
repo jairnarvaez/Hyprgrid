@@ -9,6 +9,14 @@
 #include <hyprland/src/managers/input/InputManager.hpp>
 #include <hyprland/src/render/Renderer.hpp>
 
+CHyprgrid::CHyprgrid() :
+    m_swipeUseR("gestures:workspace_swipe_use_r"),
+    m_swipeCancelRatio("gestures:workspace_swipe_cancel_ratio"),
+    m_swipeMinSpeedToForce("gestures:workspace_swipe_min_speed_to_force"),
+    m_swipeDirLockThreshold("gestures:workspace_swipe_direction_lock_threshold"),
+    m_gapsWorkspaces("general:gaps_workspaces") {
+}
+
 void CHyprgrid::begin(const ITrackpadGesture::STrackpadGestureBegin& e)
 {
     ITrackpadGesture::begin(e);
@@ -32,18 +40,14 @@ void CHyprgrid::update(const ITrackpadGesture::STrackpadGestureUpdate& e)
         return;
     }
 
-    static auto PSWIPEUSER = CConfigValue<Hyprlang::INT>("gestures:workspace_swipe_use_r");
-    static auto PSWIPEDIRLOCKTHRESHOLD = CConfigValue<Hyprlang::INT>("gestures:workspace_swipe_direction_lock_threshold");
-    static auto PWORKSPACEGAP = CConfigValue<Hyprlang::INT>("general:gaps_workspaces");
-
-    const auto XDISTANCE = m_monitor->m_size.x + *PWORKSPACEGAP;
-    const auto YDISTANCE = m_monitor->m_size.y + *PWORKSPACEGAP;
+    const auto XDISTANCE = m_monitor->m_size.x + *m_gapsWorkspaces;
+    const auto YDISTANCE = m_monitor->m_size.y + *m_gapsWorkspaces;
 
     // Calcular workspace IDs para el grid
-    int workspaceIDLeft = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r-1" : "m-1")).id;
-    int workspaceIDRight = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r+1" : "m+1")).id;
-    int workspaceIDUp = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r-" + std::to_string(hyprgrid_grid_size_x) : "m-" + std::to_string(hyprgrid_grid_size_x))).id;
-    int workspaceIDDown = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r+" + std::to_string(hyprgrid_grid_size_x) : "m+" + std::to_string(hyprgrid_grid_size_x))).id;
+    int workspaceIDLeft = getWorkspaceIDNameFromString((*m_swipeUseR ? "r-1" : "m-1")).id;
+    int workspaceIDRight = getWorkspaceIDNameFromString((*m_swipeUseR ? "r+1" : "m+1")).id;
+    int workspaceIDUp = getWorkspaceIDNameFromString((*m_swipeUseR ? "r-" + std::to_string(hyprgrid_grid_size_x) : "m-" + std::to_string(hyprgrid_grid_size_x))).id;
+    int workspaceIDDown = getWorkspaceIDNameFromString((*m_swipeUseR ? "r+" + std::to_string(hyprgrid_grid_size_x) : "m+" + std::to_string(hyprgrid_grid_size_x))).id;
 
     // Validar workspaces
     if (workspaceIDLeft == WORKSPACE_INVALID || workspaceIDRight == WORKSPACE_INVALID || workspaceIDUp == WORKSPACE_INVALID || workspaceIDDown == WORKSPACE_INVALID || workspaceIDLeft == m_workspaceBegin->m_id || workspaceIDRight == m_workspaceBegin->m_id || workspaceIDUp == m_workspaceBegin->m_id || workspaceIDDown == m_workspaceBegin->m_id) {
@@ -116,7 +120,7 @@ void CHyprgrid::update(const ITrackpadGesture::STrackpadGestureUpdate& e)
     // Bloqueo de dirección
     if (m_initialDirection != 0 && m_initialDirection != (m_delta < 0 ? -1 : 1))
         m_delta = 0;
-    else if (m_initialDirection == 0 && abs(m_delta) > *PSWIPEDIRLOCKTHRESHOLD)
+    else if (m_initialDirection == 0 && abs(m_delta) > *m_swipeDirLockThreshold)
         m_initialDirection = m_delta < 0 ? -1 : 1;
 
     // Validar y procesar el gesto
@@ -165,16 +169,11 @@ void CHyprgrid::update(const ITrackpadGesture::STrackpadGestureUpdate& e)
 
 void CHyprgrid::end(const ITrackpadGesture::STrackpadGestureEnd& e)
 {
-    static auto PSWIPEPERC = CConfigValue<Hyprlang::FLOAT>("gestures:workspace_swipe_cancel_ratio");
-    static auto PSWIPEUSER = CConfigValue<Hyprlang::INT>("gestures:workspace_swipe_use_r");
-    static auto PSWIPEFORC = CConfigValue<Hyprlang::INT>("gestures:workspace_swipe_min_speed_to_force");
-    static auto PWORKSPACEGAP = CConfigValue<Hyprlang::INT>("general:gaps_workspaces");
-
     // Obtener workspace IDs del grid
-    auto workspaceIDLeft = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r-1" : "m-1")).id;
-    auto workspaceIDRight = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r+1" : "m+1")).id;
-    auto workspaceIDUp = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r-" + std::to_string(hyprgrid_grid_size_x) : "m-" + std::to_string(hyprgrid_grid_size_x))).id;
-    auto workspaceIDDown = getWorkspaceIDNameFromString((*PSWIPEUSER ? "r+" + std::to_string(hyprgrid_grid_size_x) : "m+" + std::to_string(hyprgrid_grid_size_x))).id;
+    auto workspaceIDLeft = getWorkspaceIDNameFromString((*m_swipeUseR ? "r-1" : "m-1")).id;
+    auto workspaceIDRight = getWorkspaceIDNameFromString((*m_swipeUseR ? "r+1" : "m+1")).id;
+    auto workspaceIDUp = getWorkspaceIDNameFromString((*m_swipeUseR ? "r-" + std::to_string(hyprgrid_grid_size_x) : "m-" + std::to_string(hyprgrid_grid_size_x))).id;
+    auto workspaceIDDown = getWorkspaceIDNameFromString((*m_swipeUseR ? "r+" + std::to_string(hyprgrid_grid_size_x) : "m+" + std::to_string(hyprgrid_grid_size_x))).id;
 
     const auto SWIPEDISTANCE = 100;
 
@@ -185,8 +184,8 @@ void CHyprgrid::end(const ITrackpadGesture::STrackpadGestureEnd& e)
     auto PWORKSPACED = g_pCompositor->getWorkspaceByID(workspaceIDDown);
 
     const auto RENDEROFFSETMIDDLE = m_workspaceBegin->m_renderOffset->value();
-    const auto XDISTANCE = m_monitor->m_size.x + *PWORKSPACEGAP;
-    const auto YDISTANCE = m_monitor->m_size.y + *PWORKSPACEGAP;
+    const auto XDISTANCE = m_monitor->m_size.x + *m_gapsWorkspaces;
+    const auto YDISTANCE = m_monitor->m_size.y + *m_gapsWorkspaces;
 
     PHLWORKSPACE pSwitchedTo = nullptr;
 
@@ -204,7 +203,7 @@ void CHyprgrid::end(const ITrackpadGesture::STrackpadGestureEnd& e)
         HyprlandAPI::addNotification(PHANDLE, "Se ha alcanzado el borde inferior, cambiando workspace cancelado", { 1.0, 0.2, 0.2, 1.0 }, 5000);
     }
     // Determinar si cancelar o completar el gesto
-    bool shouldCancel = (abs(m_delta) < SWIPEDISTANCE * *PSWIPEPERC && (*PSWIPEFORC == 0 || (*PSWIPEFORC != 0 && m_avgSpeed < *PSWIPEFORC))) || abs(m_delta) < 2 || hitLeftBorder || hitRightBorder || hitTopBorder || hitBottomBorder;
+    bool shouldCancel = (abs(m_delta) < SWIPEDISTANCE * *m_swipeCancelRatio && (*m_swipeMinSpeedToForce == 0 || (*m_swipeMinSpeedToForce != 0 && m_avgSpeed < *m_swipeMinSpeedToForce))) || abs(m_delta) < 2 || hitLeftBorder || hitRightBorder || hitTopBorder || hitBottomBorder;
 
     if (shouldCancel) {
         // Cancelar gesto - revertir a workspace original

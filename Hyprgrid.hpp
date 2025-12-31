@@ -1,12 +1,13 @@
 #pragma once
 
 #include "globals.hpp"
+#include <hyprland/src/config/ConfigManager.hpp>
 #include <hyprland/src/desktop/DesktopTypes.hpp>
 #include <hyprland/src/managers/input/trackpad/gestures/ITrackpadGesture.hpp>
 
 class CHyprgrid : public ITrackpadGesture {
 public:
-    CHyprgrid() = default;
+    CHyprgrid();
     virtual ~CHyprgrid() = default;
 
     virtual void begin(const ITrackpadGesture::STrackpadGestureBegin& e);
@@ -25,4 +26,11 @@ private:
 
     float m_lastDelta = 0.F;
     bool m_firstUpdate = false;
+
+    // Config values
+    CConfigValue<Hyprlang::INT>   m_swipeUseR;
+    CConfigValue<Hyprlang::FLOAT> m_swipeCancelRatio;
+    CConfigValue<Hyprlang::INT>   m_swipeMinSpeedToForce;
+    CConfigValue<Hyprlang::INT>   m_swipeDirLockThreshold;
+    CConfigValue<Hyprlang::INT>   m_gapsWorkspaces;
 };
