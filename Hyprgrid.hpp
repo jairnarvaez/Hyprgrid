@@ -46,7 +46,6 @@ private:
     bool m_firstUpdate = false;
 
     // Config values
-    CConfigValue<Hyprlang::INT>   m_swipeUseR;
     CConfigValue<Hyprlang::FLOAT> m_swipeCancelRatio;
     CConfigValue<Hyprlang::INT>   m_swipeMinSpeedToForce;
     CConfigValue<Hyprlang::INT>   m_swipeDirLockThreshold;
