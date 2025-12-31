@@ -31,6 +31,7 @@ public:
                          int workspaceIDLeft, int workspaceIDRight, 
                          int workspaceIDUp, int workspaceIDDown);
     int getAdjacentWorkspaceID(eHyprgridDirection direction);
+    bool isAtBoundary(int workspaceID, eHyprgridDirection direction);
     
 private:
     PHLWORKSPACE m_workspaceBegin = nullptr;

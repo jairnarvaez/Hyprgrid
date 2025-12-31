@@ -34,7 +34,6 @@ static SDispatchResult onGridDispatcher(std::string arg) {
         g_pConfigManager->parseKeyword("animation", "workspaces, 1, 1, default, slidevert");
         targetWorkspaceID = hyprgrid.getAdjacentWorkspaceID(HYPRGRID_DOWN);
     }
-	HyprlandAPI::addNotification(PHANDLE, "Cambiando a Workspace" + std::to_string(targetWorkspaceID), { 1.0, 0.2, 0.2, 1.0 }, 5000);
     g_monitor = g_pCompositor->m_lastMonitor;
     g_monitor->changeWorkspace(targetWorkspaceID);
     return {};
