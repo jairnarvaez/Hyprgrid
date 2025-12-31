@@ -22,7 +22,7 @@ public:
     virtual void update(const ITrackpadGesture::STrackpadGestureUpdate& e);
     virtual void end(const ITrackpadGesture::STrackpadGestureEnd& e);
 
-    void calculateWorkspaceIDs(int& workspaceIDLeft, int& workspaceIDRight, 
+    void calculateWorkspaceIDs(int currentWorkspaceID, int& workspaceIDLeft, int& workspaceIDRight, 
                                int& workspaceIDUp, int& workspaceIDDown);
     void handleGesture(const ITrackpadGesture::STrackpadGestureUpdate& e, 
                        int workspaceIDLeft, int workspaceIDRight, 

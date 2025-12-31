@@ -17,13 +17,12 @@ CHyprgrid::CHyprgrid() :
     m_swipeDistance("gestures:workspace_swipe_distance") {
 }
 
-void CHyprgrid::calculateWorkspaceIDs(int& workspaceIDLeft, int& workspaceIDRight, 
+void CHyprgrid::calculateWorkspaceIDs(int currentWorkspaceID, int& workspaceIDLeft, int& workspaceIDRight, 
                                        int& workspaceIDUp, int& workspaceIDDown) {
     const std::string mode = *m_swipeUseR ? "r" : "m";
     const int gridWidth = hyprgrid_grid_size_x;
     
     if (hyprgrid_enable_wrap_around) {
-        int currentWorkspaceID = m_workspaceBegin->m_id;
         int row = (currentWorkspaceID - 1) / gridWidth;
         int col = (currentWorkspaceID - 1) % gridWidth;
         
@@ -56,7 +55,8 @@ void CHyprgrid::calculateWorkspaceIDs(int& workspaceIDLeft, int& workspaceIDRigh
 
 int CHyprgrid::getAdjacentWorkspaceID(eHyprgridDirection direction) {
     int workspaceIDLeft, workspaceIDRight, workspaceIDUp, workspaceIDDown;
-    calculateWorkspaceIDs(workspaceIDLeft, workspaceIDRight, workspaceIDUp, workspaceIDDown);
+    int currentWorkspaceID = m_workspaceBegin->m_id;
+    calculateWorkspaceIDs(currentWorkspaceID, workspaceIDLeft, workspaceIDRight, workspaceIDUp, workspaceIDDown);
     
     switch (direction) {
         case HYPRGRID_LEFT:
@@ -272,6 +272,7 @@ void CHyprgrid::finalizeGesture(const ITrackpadGesture::STrackpadGestureEnd& e,
         Debug::log(LOG, logMessage);
         
         pSwitchedTo = pTargetWorkspace;
+        g_currentWorkspaceID = pSwitchedTo->m_id;
     }
     
     m_initialDirection = 0;
@@ -298,7 +299,8 @@ void CHyprgrid::update(const ITrackpadGesture::STrackpadGestureUpdate& e) {
     }
     
     int workspaceIDLeft, workspaceIDRight, workspaceIDUp, workspaceIDDown;
-    calculateWorkspaceIDs(workspaceIDLeft, workspaceIDRight, workspaceIDUp, workspaceIDDown);
+    int currentWorkspaceID = m_workspaceBegin->m_id;
+    calculateWorkspaceIDs(currentWorkspaceID, workspaceIDLeft, workspaceIDRight, workspaceIDUp, workspaceIDDown);
     
     // Validar workspaces
     if (workspaceIDLeft == WORKSPACE_INVALID || workspaceIDRight == WORKSPACE_INVALID || 
@@ -315,7 +317,8 @@ void CHyprgrid::update(const ITrackpadGesture::STrackpadGestureUpdate& e) {
 
 void CHyprgrid::end(const ITrackpadGesture::STrackpadGestureEnd& e) {
     int workspaceIDLeft, workspaceIDRight, workspaceIDUp, workspaceIDDown;
-    calculateWorkspaceIDs(workspaceIDLeft, workspaceIDRight, workspaceIDUp, workspaceIDDown);
+    int currentWorkspaceID = m_workspaceBegin->m_id;
+    calculateWorkspaceIDs(currentWorkspaceID, workspaceIDLeft, workspaceIDRight, workspaceIDUp, workspaceIDDown);
     
     finalizeGesture(e, workspaceIDLeft, workspaceIDRight, workspaceIDUp, workspaceIDDown);
 }

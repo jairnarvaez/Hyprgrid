@@ -6,6 +6,7 @@ inline HANDLE PHANDLE = nullptr;
 inline int hyprgrid_grid_size_x = 3;
 inline int hyprgrid_grid_size_y = 3;
 inline bool hyprgrid_enable_wrap_around = false;
+inline int g_currentWorkspaceID = 1;
 
 void setGridSizeX(int x);
 void setGridSizeY(int y);
