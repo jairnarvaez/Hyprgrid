@@ -45,11 +45,44 @@ void CHyprgrid::update(const ITrackpadGesture::STrackpadGestureUpdate& e)
     const auto YDISTANCE = m_monitor->m_size.y + *m_gapsWorkspaces;
 
     // Calcular workspace IDs para el grid
-    int workspaceIDLeft = getWorkspaceIDNameFromString((*m_swipeUseR ? "r-1" : "m-1")).id;
-    int workspaceIDRight = getWorkspaceIDNameFromString((*m_swipeUseR ? "r+1" : "m+1")).id;
-    int workspaceIDUp = getWorkspaceIDNameFromString((*m_swipeUseR ? "r-" + std::to_string(hyprgrid_grid_size_x) : "m-" + std::to_string(hyprgrid_grid_size_x))).id;
-    int workspaceIDDown = getWorkspaceIDNameFromString((*m_swipeUseR ? "r+" + std::to_string(hyprgrid_grid_size_x) : "m+" + std::to_string(hyprgrid_grid_size_x))).id;
+    const std::string mode = *m_swipeUseR ? "r" : "m";
+    const int gridWidth = hyprgrid_grid_size_x;
 
+    int workspaceIDLeft, workspaceIDRight, workspaceIDUp, workspaceIDDown;
+
+    if (hyprgrid_enable_wrap_around) {
+        // Get current workspace position in grid
+        int currentWorkspaceID = m_workspaceBegin->m_id;
+        
+        // Calculate position in grid (assuming 1-indexed workspaces)
+        int row = (currentWorkspaceID - 1) / gridWidth;
+        int col = (currentWorkspaceID - 1) % gridWidth;
+        
+        // Wrap-around logic for horizontal navigation
+        int leftCol = (col == 0) ? gridWidth - 1 : col - 1;
+        int rightCol = (col == gridWidth - 1) ? 0 : col + 1;
+        
+        // Wrap-around logic for vertical navigation
+        int upRow = (row == 0) ? gridWidth - 1 : row - 1;
+        int downRow = (row == gridWidth - 1) ? 0 : row + 1;
+        
+        // Convert back to workspace IDs
+        int leftWorkspace = row * gridWidth + leftCol + 1;
+        int rightWorkspace = row * gridWidth + rightCol + 1;
+        int upWorkspace = upRow * gridWidth + col + 1;
+        int downWorkspace = downRow * gridWidth + col + 1;
+        
+        workspaceIDLeft = getWorkspaceIDNameFromString(mode + "~" + std::to_string(leftWorkspace)).id;
+        workspaceIDRight = getWorkspaceIDNameFromString(mode + "~" + std::to_string(rightWorkspace)).id;
+        workspaceIDUp = getWorkspaceIDNameFromString(mode + "~" + std::to_string(upWorkspace)).id;
+        workspaceIDDown = getWorkspaceIDNameFromString(mode + "~" + std::to_string(downWorkspace)).id;
+    } else {
+        // Original behavior without wrap-around
+        workspaceIDLeft = getWorkspaceIDNameFromString(mode + "-1").id;
+        workspaceIDRight = getWorkspaceIDNameFromString(mode + "+1").id;
+        workspaceIDUp = getWorkspaceIDNameFromString(mode + "-" + std::to_string(gridWidth)).id;
+        workspaceIDDown = getWorkspaceIDNameFromString(mode + "+" + std::to_string(gridWidth)).id;
+    }
     // Validar workspaces
     if (workspaceIDLeft == WORKSPACE_INVALID || workspaceIDRight == WORKSPACE_INVALID || workspaceIDUp == WORKSPACE_INVALID || workspaceIDDown == WORKSPACE_INVALID || workspaceIDLeft == m_workspaceBegin->m_id || workspaceIDRight == m_workspaceBegin->m_id || workspaceIDUp == m_workspaceBegin->m_id || workspaceIDDown == m_workspaceBegin->m_id) {
         m_workspaceBegin = nullptr;
@@ -95,11 +128,15 @@ void CHyprgrid::update(const ITrackpadGesture::STrackpadGestureUpdate& e)
     bool hitTopBorder = (m_workspaceBegin->m_id <= hyprgrid_grid_size_x && m_delta < 0 && m_vertanim);
     bool hitBottomBorder = (m_workspaceBegin->m_id > (hyprgrid_grid_size_x * (hyprgrid_grid_size_y - 1)) && m_delta > 0 && m_vertanim);
 
-    if (hitLeftBorder || hitRightBorder || hitTopBorder || hitBottomBorder) {
-        m_delta = 0;
-        g_pHyprRenderer->damageMonitor(m_monitor.lock());
-        m_workspaceBegin->m_renderOffset->setValueAndWarp(Vector2D(0.0, 0.0));
-        return;
+    bool hitBorder = hitLeftBorder || hitRightBorder || hitTopBorder || hitBottomBorder;
+
+    if(!hyprgrid_enable_wrap_around){
+        if (hitBorder) {
+            m_delta = 0;
+            g_pHyprRenderer->damageMonitor(m_monitor.lock());
+            m_workspaceBegin->m_renderOffset->setValueAndWarp(Vector2D(0.0, 0.0));
+            return;
+        }
     }
 
     // Determinar workspace objetivo y opuesto según la dirección del gesto
@@ -118,6 +155,10 @@ void CHyprgrid::update(const ITrackpadGesture::STrackpadGestureUpdate& e)
         oppositeWorkspaceID = workspaceIDDown;
     }
 
+    //HyprlandAPI::addNotification(PHANDLE,  "targetWorkspaceID: " + std::to_string(targetWorkspaceID), { 1.0, 0.2, 0.2, 1.0 }, 5000);
+    //HyprlandAPI::addNotification(PHANDLE,  "oppositeWorkspaceID: " + std::to_string(oppositeWorkspaceID), { 1.0, 0.2, 0.2, 1.0 }, 5000);
+
+
     // Bloqueo de dirección
     if (m_initialDirection != 0 && m_initialDirection != (m_delta < 0 ? -1 : 1))
         m_delta = 0;
@@ -129,9 +170,11 @@ void CHyprgrid::update(const ITrackpadGesture::STrackpadGestureUpdate& e)
 
     bool isInvalidMove = (!PWORKSPACE) || (m_delta < 0 && targetWorkspaceID > m_workspaceBegin->m_id) || (m_delta >= 0 && targetWorkspaceID < m_workspaceBegin->m_id);
 
-    if (isInvalidMove) {
-        m_delta = 0;
-        return;
+    if(!hyprgrid_enable_wrap_around){
+        if (isInvalidMove) {
+            m_delta = 0;
+            return;
+        }
     }
 
     PWORKSPACE->m_forceRendering = true;
@@ -170,13 +213,45 @@ void CHyprgrid::update(const ITrackpadGesture::STrackpadGestureUpdate& e)
 
 void CHyprgrid::end(const ITrackpadGesture::STrackpadGestureEnd& e)
 {
-    // Obtener workspace IDs del grid
-    auto workspaceIDLeft = getWorkspaceIDNameFromString((*m_swipeUseR ? "r-1" : "m-1")).id;
-    auto workspaceIDRight = getWorkspaceIDNameFromString((*m_swipeUseR ? "r+1" : "m+1")).id;
-    auto workspaceIDUp = getWorkspaceIDNameFromString((*m_swipeUseR ? "r-" + std::to_string(hyprgrid_grid_size_x) : "m-" + std::to_string(hyprgrid_grid_size_x))).id;
-    auto workspaceIDDown = getWorkspaceIDNameFromString((*m_swipeUseR ? "r+" + std::to_string(hyprgrid_grid_size_x) : "m+" + std::to_string(hyprgrid_grid_size_x))).id;
+    // Calcular workspace IDs para el grid
+    const std::string mode = *m_swipeUseR ? "r" : "m";
+    const int gridWidth = hyprgrid_grid_size_x;
 
+    int workspaceIDLeft, workspaceIDRight, workspaceIDUp, workspaceIDDown;
 
+    if (hyprgrid_enable_wrap_around) {
+        // Get current workspace position in grid
+        int currentWorkspaceID = m_workspaceBegin->m_id;
+        
+        // Calculate position in grid (assuming 1-indexed workspaces)
+        int row = (currentWorkspaceID - 1) / gridWidth;
+        int col = (currentWorkspaceID - 1) % gridWidth;
+        
+        // Wrap-around logic for horizontal navigation
+        int leftCol = (col == 0) ? gridWidth - 1 : col - 1;
+        int rightCol = (col == gridWidth - 1) ? 0 : col + 1;
+        
+        // Wrap-around logic for vertical navigation
+        int upRow = (row == 0) ? gridWidth - 1 : row - 1;
+        int downRow = (row == gridWidth - 1) ? 0 : row + 1;
+        
+        // Convert back to workspace IDs
+        int leftWorkspace = row * gridWidth + leftCol + 1;
+        int rightWorkspace = row * gridWidth + rightCol + 1;
+        int upWorkspace = upRow * gridWidth + col + 1;
+        int downWorkspace = downRow * gridWidth + col + 1;
+        
+        workspaceIDLeft = getWorkspaceIDNameFromString(mode + "~" + std::to_string(leftWorkspace)).id;
+        workspaceIDRight = getWorkspaceIDNameFromString(mode + "~" + std::to_string(rightWorkspace)).id;
+        workspaceIDUp = getWorkspaceIDNameFromString(mode + "~" + std::to_string(upWorkspace)).id;
+        workspaceIDDown = getWorkspaceIDNameFromString(mode + "~" + std::to_string(downWorkspace)).id;
+    } else {
+        // Original behavior without wrap-around
+        workspaceIDLeft = getWorkspaceIDNameFromString(mode + "-1").id;
+        workspaceIDRight = getWorkspaceIDNameFromString(mode + "+1").id;
+        workspaceIDUp = getWorkspaceIDNameFromString(mode + "-" + std::to_string(gridWidth)).id;
+        workspaceIDDown = getWorkspaceIDNameFromString(mode + "+" + std::to_string(gridWidth)).id;
+    }
 
     // Obtener punteros a todos los workspaces del grid
     auto PWORKSPACER = g_pCompositor->getWorkspaceByID(workspaceIDRight);
@@ -196,15 +271,13 @@ void CHyprgrid::end(const ITrackpadGesture::STrackpadGestureEnd& e)
     bool hitTopBorder = (m_workspaceBegin->m_id <= hyprgrid_grid_size_x && m_delta == 0 && m_vertanim);
     bool hitBottomBorder = (m_workspaceBegin->m_id > (hyprgrid_grid_size_x * (hyprgrid_grid_size_y - 1)) && m_delta > 0 && m_vertanim);
 
-    if (hitTopBorder) {
-        HyprlandAPI::addNotification(PHANDLE, "Se ha alcanzado el borde superior, cambiando workspace cancelado", { 1.0, 0.2, 0.2, 1.0 }, 5000);
-    }
-
-    if (hitBottomBorder) {
-        HyprlandAPI::addNotification(PHANDLE, "Se ha alcanzado el borde inferior, cambiando workspace cancelado", { 1.0, 0.2, 0.2, 1.0 }, 5000);
+    bool hitBorder = hitLeftBorder || hitRightBorder || hitTopBorder || hitBottomBorder;
+    
+    if(hyprgrid_enable_wrap_around){
+        hitBorder = false;
     }
     // Determinar si cancelar o completar el gesto
-    bool shouldCancel = (abs(m_delta) < *m_swipeDistance * *m_swipeCancelRatio && (*m_swipeMinSpeedToForce == 0 || (*m_swipeMinSpeedToForce != 0 && m_avgSpeed < *m_swipeMinSpeedToForce))) || abs(m_delta) < 2 || hitLeftBorder || hitRightBorder || hitTopBorder || hitBottomBorder;
+    bool shouldCancel = (abs(m_delta) < *m_swipeDistance * *m_swipeCancelRatio && (*m_swipeMinSpeedToForce == 0 || (*m_swipeMinSpeedToForce != 0 && m_avgSpeed < *m_swipeMinSpeedToForce))) || abs(m_delta) < 2 || hitBorder;
 
     if (shouldCancel) {
         // Cancelar gesto - revertir a workspace original
