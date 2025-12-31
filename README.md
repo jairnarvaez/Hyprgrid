@@ -59,3 +59,18 @@ gestures {
     workspace_swipe_create_new = true
 }
 ```
+
+### TODO
+
+[ ] **Configurable Wrap-Around Navigation**: Add an option to allow "wrapping around" the grid, so swiping right on the
+   last workspace of a row moves to the first, and swiping left on the first moves to the last (and similarly for
+   vertical navigation).
+   
+[ ] **Keyboard Shortcut Navigation**: Implement keybindings to navigate the workspace grid (e.g., using arrow keys with a
+   modifier), making the plugin accessible without a trackpad.
+   
+[ ] **Move Window with Focus**: Add a feature to move the currently focused window to the new workspace when navigating
+   the grid. This could be a separate set of keybindings or a configurable option for gestures.
+   
+[ ] **On-Screen Display (OSD) for Grid**: Implement a visual overlay that briefly shows the workspace grid and highlights
+   the active workspace during navigation for better user feedback.
