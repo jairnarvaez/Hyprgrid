@@ -78,7 +78,6 @@ int CHyprgrid::getAdjacentWorkspaceID(eHyprgridDirection direction)
     int currentWorkspaceID = m_workspaceBegin->m_id;
 
     if (!hyprgrid_enable_wrap_around && isAtBoundary(currentWorkspaceID, direction)) {
-        HyprlandAPI::addNotification(PHANDLE, "Cambiando a Workspace" + std::to_string(currentWorkspaceID), { 1.0, 0.2, 0.2, 1.0 }, 5000);
         return currentWorkspaceID;
     }
 
