@@ -7,6 +7,7 @@
 #include <hyprland/src/managers/input/InputManager.hpp>
 #include <hyprland/src/render/Renderer.hpp>
 #include <string>
+#include <hyprland/src/desktop/state/FocusState.hpp>
 
 CHyprgrid::CHyprgrid()
     : m_swipeCancelRatio("gestures:workspace_swipe_cancel_ratio")
@@ -73,7 +74,7 @@ bool CHyprgrid::isAtBoundary(int workspaceID, eHyprgridDirection direction)
 int CHyprgrid::getAdjacentWorkspaceID(eHyprgridDirection direction)
 {
     int workspaceIDLeft, workspaceIDRight, workspaceIDUp, workspaceIDDown;
-    const auto PWORKSPACE = g_pCompositor->m_lastMonitor->m_activeWorkspace;
+    const auto PWORKSPACE =  Desktop::focusState()->monitor()->m_activeWorkspace;
     m_workspaceBegin = PWORKSPACE;
     int currentWorkspaceID = m_workspaceBegin->m_id;
 
@@ -274,7 +275,7 @@ void CHyprgrid::finalizeGesture(const ITrackpadGesture::STrackpadGestureEnd& e,
         } else {
             m_monitor->changeWorkspace(g_pCompositor->createNewWorkspace(targetWorkspaceID, m_monitor->m_id));
             pTargetWorkspace = g_pCompositor->getWorkspaceByID(targetWorkspaceID);
-            pTargetWorkspace->rememberPrevWorkspace(m_workspaceBegin);
+        //    pTargetWorkspace->rememberPrevWorkspace(m_workspaceBegin);
         }
 
         pTargetWorkspace->m_renderOffset->setValue(RENDEROFFSET);
@@ -283,9 +284,6 @@ void CHyprgrid::finalizeGesture(const ITrackpadGesture::STrackpadGestureEnd& e,
         *m_workspaceBegin->m_renderOffset = finalBeginOffset;
         m_workspaceBegin->m_alpha->setValueAndWarp(1.f);
         g_pInputManager->unconstrainMouse();
-
-        const char* logMessage = m_vertanim ? (isMovingUpOrLeft ? "Ended swipe UP" : "Ended swipe DOWN") : (isMovingUpOrLeft ? "Ended swipe to the left" : "Ended swipe to the right");
-        Debug::log(LOG, logMessage);
 
         pSwitchedTo = pTargetWorkspace;
         g_currentWorkspaceID = pSwitchedTo->m_id;
@@ -304,9 +302,9 @@ void CHyprgrid::begin(const ITrackpadGesture::STrackpadGestureBegin& e)
     m_speedPoints = 0;
     m_vertanim = false;
 
-    const auto PWORKSPACE = g_pCompositor->m_lastMonitor->m_activeWorkspace;
+    const auto PWORKSPACE = Desktop::focusState()->monitor()->m_activeWorkspace;
     m_workspaceBegin = PWORKSPACE;
-    m_monitor = g_pCompositor->m_lastMonitor;
+    m_monitor = Desktop::focusState()->monitor();
 }
 
 void CHyprgrid::update(const ITrackpadGesture::STrackpadGestureUpdate& e)

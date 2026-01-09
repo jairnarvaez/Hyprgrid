@@ -8,6 +8,7 @@
 #include <hyprland/src/managers/input/trackpad/gestures/ITrackpadGesture.hpp>
 #include <hyprutils/string/ConstVarList.hpp>
 #include <cstring>
+#include <hyprland/src/desktop/state/FocusState.hpp>
 
 static bool g_unloading = false;
 
@@ -34,7 +35,7 @@ static SDispatchResult onGridDispatcher(std::string arg) {
         g_pConfigManager->parseKeyword("animation", "workspaces, 1, 1, default, slidevert");
         targetWorkspaceID = hyprgrid.getAdjacentWorkspaceID(HYPRGRID_DOWN);
     }
-    g_monitor = g_pCompositor->m_lastMonitor;
+    g_monitor = Desktop::focusState()->monitor();
     g_monitor->changeWorkspace(targetWorkspaceID);
     return {};
 }
