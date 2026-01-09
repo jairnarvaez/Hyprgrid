@@ -80,6 +80,8 @@ bind = SUPER Shift, right, hyprgrid:move, right
 bind = SUPER Shift, up, hyprgrid:move, up
 bind = SUPER Shift, down, hyprgrid:move, down
 ```
+[ ] **Overview**: Implement both a keybinding and a gesture to view all active workspaces. Additionally, implement a keybinding to move between workspaces.
+
 [ ] **Move Window with Focus**: Add a feature to move the currently focused window to the new workspace when navigating
    the grid. This could be a separate set of keybindings or a configurable option for gestures.
    
