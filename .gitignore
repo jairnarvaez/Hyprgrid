@@ -1,1 +1,8 @@
-.vscode/
+.*
+*.so
+.cache/
+.ccls-cache/
+.clangd/
+*.json
+!.gitignore
+.editorconfig
