@@ -1,8 +1,10 @@
 #pragma once
 
 #include <hyprland/src/plugins/PluginAPI.hpp>
-#include <hyprland/src/config/ConfigManager.hpp>  
+#include <hyprland/src/config/ConfigManager.hpp>
 #include <hyprland/src/desktop/DesktopTypes.hpp>
+
+inline bool g_unloading = false;
 
 inline HANDLE PHANDLE = nullptr;
 inline int hyprgrid_grid_size_x = 3;

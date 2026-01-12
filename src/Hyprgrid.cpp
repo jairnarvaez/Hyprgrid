@@ -1,12 +1,13 @@
 #include "Hyprgrid.hpp"
 #include "globals.hpp"
+
+#include <string>
+
 #include <hyprland/src/Compositor.hpp>
-#include <hyprland/src/config/ConfigManager.hpp>
 #include <hyprland/src/desktop/DesktopTypes.hpp>
 #include <hyprland/src/helpers/Monitor.hpp>
 #include <hyprland/src/managers/input/InputManager.hpp>
 #include <hyprland/src/render/Renderer.hpp>
-#include <string>
 #include <hyprland/src/desktop/state/FocusState.hpp>
 
 CHyprgrid::CHyprgrid()

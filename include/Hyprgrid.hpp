@@ -1,8 +1,7 @@
 #pragma once
 
-#include "globals.hpp"
+#include <hyprlang.hpp>
 #include <hyprland/src/config/ConfigManager.hpp>
-#include <hyprland/src/desktop/DesktopTypes.hpp>
 #include <hyprland/src/managers/input/trackpad/gestures/ITrackpadGesture.hpp>
 
 enum eHyprgridDirection {
@@ -11,7 +10,6 @@ enum eHyprgridDirection {
     HYPRGRID_UP,
     HYPRGRID_DOWN
 };
-
 
 class CHyprgrid : public ITrackpadGesture {
 public:
@@ -22,17 +20,17 @@ public:
     virtual void update(const ITrackpadGesture::STrackpadGestureUpdate& e);
     virtual void end(const ITrackpadGesture::STrackpadGestureEnd& e);
 
-    void calculateWorkspaceIDs(int currentWorkspaceID, int& workspaceIDLeft, int& workspaceIDRight, 
+    void calculateWorkspaceIDs(int currentWorkspaceID, int& workspaceIDLeft, int& workspaceIDRight,
                                int& workspaceIDUp, int& workspaceIDDown);
-    void handleGesture(const ITrackpadGesture::STrackpadGestureUpdate& e, 
-                       int workspaceIDLeft, int workspaceIDRight, 
+    void handleGesture(const ITrackpadGesture::STrackpadGestureUpdate& e,
+                       int workspaceIDLeft, int workspaceIDRight,
                        int workspaceIDUp, int workspaceIDDown);
-    void finalizeGesture(const ITrackpadGesture::STrackpadGestureEnd& e, 
-                         int workspaceIDLeft, int workspaceIDRight, 
+    void finalizeGesture(const ITrackpadGesture::STrackpadGestureEnd& e,
+                         int workspaceIDLeft, int workspaceIDRight,
                          int workspaceIDUp, int workspaceIDDown);
     int getAdjacentWorkspaceID(eHyprgridDirection direction);
     bool isAtBoundary(int workspaceID, eHyprgridDirection direction);
-    
+
 private:
     PHLWORKSPACE m_workspaceBegin = nullptr;
     PHLMONITORREF m_monitor;
